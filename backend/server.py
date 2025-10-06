@@ -149,6 +149,58 @@ class RazorpayPaymentVerify(BaseModel):
     member_id: str
     description: str
 
+# Authentication Models
+class User(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    username: str
+    email: EmailStr
+    full_name: str
+    role: UserRole = UserRole.STAFF
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class UserCreate(BaseModel):
+    username: str
+    email: EmailStr
+    full_name: str
+    password: str
+    role: UserRole = UserRole.STAFF
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    user: dict
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+
+# Settings Models
+class GymSettings(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    gym_name: str = "Iron Paradise Gym"
+    gym_address: str = ""
+    gym_phone: str = ""
+    gym_email: str = ""
+    gym_logo_url: str = ""
+    membership_plans: dict = Field(default_factory=dict)
+    terms_conditions: str = ""
+    updated_by: str = ""
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class SettingsUpdate(BaseModel):
+    gym_name: Optional[str] = None
+    gym_address: Optional[str] = None
+    gym_phone: Optional[str] = None
+    gym_email: Optional[str] = None
+    gym_logo_url: Optional[str] = None
+    membership_plans: Optional[dict] = None
+    terms_conditions: Optional[str] = None
+
 # Helper functions
 def calculate_membership_fee(membership_type: MembershipType) -> float:
     """Calculate membership fee based on type"""
