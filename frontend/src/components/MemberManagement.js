@@ -426,7 +426,7 @@ const MemberManagement = () => {
         </Button>
       </div>
     </form>
-  ));
+  );
 
   if (loading) {
     return (
