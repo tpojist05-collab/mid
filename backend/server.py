@@ -1600,7 +1600,7 @@ async def delete_receipt_template(template_id: str, current_user: User = Depends
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/receipts/generate/{payment_id}")
-async def generate_receipt(payment_id: str, template_id: str = None, current_user: dict = Depends(get_current_user)):
+async def generate_receipt(payment_id: str, template_id: str = None, current_user: User = Depends(get_current_active_user)):
     """Generate receipt for payment"""
     try:
         # Get payment details
