@@ -1217,7 +1217,7 @@ async def record_payment(payment_data: PaymentCreate):
         # Send notification
         await send_system_notification(
             f"Payment recorded: ₹{payment.amount}",
-            f"Payment of ₹{payment.amount} recorded for {member['name']} via {payment.method.upper()}",
+            f"Payment of ₹{payment.amount} recorded for {member['name']} via {payment.payment_method.upper()}",
             "info"
         )
         
