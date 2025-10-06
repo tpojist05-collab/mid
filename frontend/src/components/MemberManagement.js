@@ -419,7 +419,16 @@ const MemberManagement = () => {
                 <p className="text-sm text-slate-600">{member.emergency_contact.phone}</p>
               </div>
               
-              <div className="flex justify-end pt-2">
+              <div className="flex justify-end gap-2 pt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => sendReminderToMember(member)}
+                  className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                  data-testid={`remind-member-${member.id}`}
+                >
+                  📱 Send Reminder
+                </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
