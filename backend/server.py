@@ -1400,45 +1400,115 @@ async def startup_event():
 async def initialize_default_payment_gateways():
     """Initialize default payment gateways"""
     try:
-        gateway_count = await db.payment_gateways.count_documents({})
-        if gateway_count > 0:
-            return
-        
-        gateways = [
-            PaymentGateway(
-                name="Razorpay",
-                provider="razorpay",
-                is_active=True,
-                supported_methods=["card", "upi", "netbanking", "wallet", "gpay", "paytm", "phonepe"]
-            ),
-            PaymentGateway(
-                name="PayU India",
-                provider="payu",
-                is_active=False,
-                supported_methods=["card", "upi", "netbanking", "wallet"]
-            ),
-            PaymentGateway(
-                name="CCAvenue",
-                provider="ccavenue", 
-                is_active=False,
-                supported_methods=["card", "netbanking", "wallet"]
-            ),
-            PaymentGateway(
-                name="Instamojo",
-                provider="instamojo",
-                is_active=False,
-                supported_methods=["card", "upi", "netbanking", "wallet"]
-            )
+        default_gateways = [
+            {
+                "id": str(uuid.uuid4()),
+                "name": "Razorpay",
+                "provider": "razorpay",
+                "is_enabled": True,
+                "supported_methods": ["card", "netbanking", "wallet", "upi"],
+                "fees_percentage": 2.5,
+                "currency": "INR",
+                "created_at": datetime.now(timezone.utc)
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "PayU",
+                "provider": "payu",
+                "is_enabled": True,
+                "supported_methods": ["card", "netbanking", "wallet", "upi"],
+                "fees_percentage": 2.3,
+                "currency": "INR",
+                "created_at": datetime.now(timezone.utc)
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "Google Pay",
+                "provider": "google_pay",
+                "is_enabled": True,
+                "supported_methods": ["upi", "wallet"],
+                "fees_percentage": 1.5,
+                "currency": "INR",
+                "created_at": datetime.now(timezone.utc)
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "Paytm",
+                "provider": "paytm",
+                "is_enabled": True,
+                "supported_methods": ["card", "netbanking", "wallet", "upi"],
+                "fees_percentage": 2.0,
+                "currency": "INR",
+                "created_at": datetime.now(timezone.utc)
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "name": "PhonePe",
+                "provider": "phonepe",
+                "is_enabled": True,
+                "supported_methods": ["card", "netbanking", "wallet", "upi"],
+                "fees_percentage": 1.5,
+                "currency": "INR",
+                "created_at": datetime.now(timezone.utc)
+            }
         ]
         
-        for gateway in gateways:
-            gateway_dict = prepare_for_mongo(gateway.dict())
-            await db.payment_gateways.insert_one(gateway_dict)
-            
-        logger.info("Default payment gateways initialized")
-        
+        for gateway in default_gateways:
+            existing = await db.payment_gateways.find_one({"provider": gateway["provider"]})
+            if not existing:
+                await db.payment_gateways.insert_one(gateway)
+                logger.info(f"Created payment gateway: {gateway['name']}")
+                
     except Exception as e:
         logger.error(f"Error initializing payment gateways: {e}")
+        raise
+
+async def initialize_receipt_templates():
+    """Initialize default receipt templates"""
+    try:
+        default_template = {
+            "id": str(uuid.uuid4()),
+            "name": "Default Receipt Template",
+            "is_default": True,
+            "template_type": "payment_receipt",
+            "header": {
+                "gym_name": "Iron Paradise Gym",
+                "gym_logo": "/images/gym-logo.png",
+                "address": "123 Fitness Street, Gym City, 123456",
+                "phone": "+91-9876543210",
+                "email": "info@ironparadise.com",
+                "website": "www.ironparadise.com"
+            },
+            "styles": {
+                "primary_color": "#2563eb",
+                "secondary_color": "#64748b",
+                "font_family": "Arial, sans-serif",
+                "font_size": "14px"
+            },
+            "sections": {
+                "show_payment_details": True,
+                "show_member_info": True,
+                "show_service_details": True,
+                "show_taxes": True,
+                "show_terms": True
+            },
+            "footer": {
+                "thank_you_message": "Thank you for choosing Iron Paradise Gym!",
+                "terms_text": "All payments are non-refundable. Terms and conditions apply.",
+                "contact_info": "For queries, contact us at info@ironparadise.com"
+            },
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
+        }
+        
+        existing = await db.receipt_templates.find_one({"is_default": True})
+        if not existing:
+            await db.receipt_templates.insert_one(default_template)
+            logger.info("Created default receipt template")
+            
+    except Exception as e:
+        logger.error(f"Error initializing receipt templates: {e}")
+        raise
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
