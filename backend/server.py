@@ -372,7 +372,7 @@ async def get_all_users(current_admin: User = Depends(require_admin_role)):
 
 # Member Management Routes
 @api_router.post("/members", response_model=Member)
-async def create_member(member_data: MemberCreate):
+async def create_member(member_data: MemberCreate, current_user: User = Depends(get_current_active_user)):
     try:
         # Set join date if not provided
         join_date = member_data.join_date or datetime.now(timezone.utc)
