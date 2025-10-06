@@ -121,6 +121,37 @@ const MemberManagement = () => {
     }
   };
 
+  const deleteMember = async (member) => {
+    if (!isAdmin()) {
+      toast.error('Only administrators can delete members');
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete ${member.name}? This action cannot be undone and will remove all associated data.`)) {
+      return;
+    }
+
+    try {
+      await apiClient.delete(`/members/${member.id}`);
+      toast.success(`Member ${member.name} deleted successfully`);
+      fetchMembers();
+    } catch (error) {
+      console.error('Error deleting member:', error);
+      toast.error('Failed to delete member');
+    }
+  };
+
+  const updateMemberStatus = async (member, newStatus) => {
+    try {
+      await apiClient.patch(`/members/${member.id}/status?status=${newStatus}`);
+      toast.success(`Member status updated to ${newStatus}`);
+      fetchMembers();
+    } catch (error) {
+      console.error('Error updating member status:', error);
+      toast.error('Failed to update member status');
+    }
+  };
+
   const getMembershipLabel = (type) => {
     const labels = {
       monthly: 'Monthly',
