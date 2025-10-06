@@ -263,20 +263,24 @@ class IronParadiseGymAPITester:
 
     def test_create_member(self):
         """Test creating a new member"""
+        if not self.auth_token:
+            self.log_test("Create Member", False, "No auth token available for testing")
+            return
+            
         member_data = {
-            "name": "Test Member",
-            "email": "test@example.com",
+            "name": "Rajesh Kumar",
+            "email": "rajesh.kumar@example.com",
             "phone": "+91 9876543210",
-            "address": "123 Test Street, Test City, Test State 123456",
+            "address": "123 MG Road, Bangalore, Karnataka 560001",
             "emergency_contact": {
-                "name": "Emergency Contact",
+                "name": "Priya Kumar",
                 "phone": "+91 9876543211",
                 "relationship": "Spouse"
             },
             "membership_type": "monthly"
         }
         
-        success, response = self.make_request('POST', 'members', member_data, 200)
+        success, response = self.make_request('POST', 'members', member_data, 200, auth_required=True)
         
         if success:
             # Validate response structure
