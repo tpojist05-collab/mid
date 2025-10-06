@@ -261,7 +261,7 @@ class Payment(BaseModel):
     method: PaymentMethod = PaymentMethod.CASH
     description: str = ""
     payment_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    status: PaymentStatus = PaymentStatus.COMPLETED
+    status: PaymentStatus = PaymentStatus.PAID
     transaction_id: Optional[str] = None
     gateway_response: Optional[dict] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
