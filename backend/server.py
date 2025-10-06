@@ -1551,13 +1551,13 @@ async def send_bulk_reminders(
         
         # Send notification
         await send_system_notification(
-            f"Bulk reminders sent",
+            "Bulk reminders sent",
             f"Sent {sent_count} WhatsApp reminders for members expiring in {days_before_expiry} days. {failed_count} failed. Initiated by {current_user.full_name}",
             "info"
         )
         
         return {
-            "message": f"Bulk reminders completed",
+            "message": "Bulk reminders completed",
             "sent": sent_count,
             "failed": failed_count,
             "total_members": len(members)
