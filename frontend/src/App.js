@@ -43,6 +43,8 @@ const AppContent = () => {
         return <PaymentManagement />;
       case 'reminders':
         return <ReminderManagement />;
+      case 'earnings':
+        return <EarningsManagement />;
       case 'users':
         return <UserManagement />;
       case 'receipts':
