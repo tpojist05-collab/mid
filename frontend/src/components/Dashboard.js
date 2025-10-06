@@ -5,7 +5,7 @@ import { Badge } from './ui/badge';
 import { apiClient } from '../App';
 import { toast } from 'sonner';
 
-const Dashboard = () => {
+const Dashboard = ({ setCurrentPage }) => {
   const [stats, setStats] = useState(null);
   const [expiringMembers, setExpiringMembers] = useState([]);
   const [loading, setLoading] = useState(true);
