@@ -471,14 +471,125 @@ async def register_user(user_data: UserCreate, current_admin: User = Depends(req
         # Hash password and create user
         hashed_password = get_password_hash(user_data.password)
         user = User(
-            **user_data.dict(exclude={'password'})
+            **user_data.dict(exclude={'password'}),
+            created_by=current_admin.username
         )
         
         user_dict = prepare_for_mongo(user.dict())
         user_dict['hashed_password'] = hashed_password
         
         await db.users.insert_one(user_dict)
+        
+        # Update user permissions
+        await update_user_permissions(user.id)
+        
+        # Send notification
+        await send_system_notification(
+            f"New user '{user.full_name}' added",
+            f"User created with role: {user.role} by {current_admin.full_name}",
+            "info"
+        )
+        
         return user
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/users/{user_id}", response_model=User)
+async def update_user(
+    user_id: str, 
+    user_update: UserCreate,
+    current_admin: User = Depends(require_admin_role)
+):
+    try:
+        # Prevent admin from changing their own role
+        if current_admin.id == user_id and user_update.role != UserRole.ADMIN:
+            raise HTTPException(status_code=400, detail="Cannot change your own admin role")
+        
+        existing_user = await db.users.find_one({"id": user_id})
+        if not existing_user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Check if username/email conflicts exist (excluding current user)
+        if user_update.username != existing_user["username"]:
+            existing_username = await db.users.find_one({
+                "username": user_update.username,
+                "id": {"$ne": user_id}
+            })
+            if existing_username:
+                raise HTTPException(status_code=400, detail="Username already exists")
+        
+        if user_update.email != existing_user["email"]:
+            existing_email = await db.users.find_one({
+                "email": user_update.email,
+                "id": {"$ne": user_id}
+            })
+            if existing_email:
+                raise HTTPException(status_code=400, detail="Email already exists")
+        
+        # Update user data
+        update_data = user_update.dict(exclude={'password'})
+        update_data['updated_at'] = datetime.now(timezone.utc)
+        
+        # Update password if provided
+        if user_update.password:
+            update_data['hashed_password'] = get_password_hash(user_update.password)
+        
+        update_data = prepare_for_mongo(update_data)
+        
+        await db.users.update_one(
+            {"id": user_id},
+            {"$set": update_data}
+        )
+        
+        # Update user permissions
+        await update_user_permissions(user_id)
+        
+        # Send notification
+        await send_system_notification(
+            f"User '{user_update.full_name}' updated",
+            f"User details updated by {current_admin.full_name}",
+            "info"
+        )
+        
+        # Get updated user
+        updated_user = await db.users.find_one({"id": user_id})
+        return User(**parse_from_mongo(updated_user))
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/users/{user_id}")
+async def delete_user(user_id: str, current_admin: User = Depends(require_admin_role)):
+    try:
+        # Prevent admin from deleting themselves
+        if current_admin.id == user_id:
+            raise HTTPException(status_code=400, detail="Cannot delete your own account")
+        
+        user = await db.users.find_one({"id": user_id})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Check if it's the last admin
+        if user.get("role") == "admin":
+            admin_count = await db.users.count_documents({"role": "admin"})
+            if admin_count <= 1:
+                raise HTTPException(status_code=400, detail="Cannot delete the last admin user")
+        
+        await db.users.delete_one({"id": user_id})
+        
+        # Send notification
+        await send_system_notification(
+            f"User '{user['full_name']}' deleted",
+            f"User account deleted by {current_admin.full_name}",
+            "warning"
+        )
+        
+        return {"message": f"User {user['full_name']} deleted successfully"}
         
     except HTTPException:
         raise
