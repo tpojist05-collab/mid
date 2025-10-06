@@ -1558,10 +1558,10 @@ async def create_receipt_template(template_data: dict, current_user: User = Depe
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.put("/api/receipts/templates/{template_id}")
-async def update_receipt_template(template_id: str, template_data: dict, current_user: dict = Depends(get_current_user)):
+async def update_receipt_template(template_id: str, template_data: dict, current_user: User = Depends(get_current_active_user)):
     """Update receipt template"""
     try:
-        if current_user["role"] != "admin":
+        if current_user.role != UserRole.ADMIN:
             raise HTTPException(status_code=403, detail="Admin access required")
         
         template_data["updated_at"] = datetime.now(timezone.utc)
