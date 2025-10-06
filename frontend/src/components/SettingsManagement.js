@@ -250,33 +250,57 @@ const SettingsManagement = () => {
       </Card>
 
       {/* Membership Plans */}
-      {/* Admission Fee Setting */}
+      {/* Admission Fee Setting - Monthly Plan Only */}
       <Card className="glass border-0">
         <CardHeader>
           <CardTitle className="text-slate-800 flex items-center">
             <span className="mr-2">💰</span>
-            Admission Fee
+            Admission Fee (Monthly Plan Only)
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
             <div className="space-y-2">
-              <Label htmlFor="admission_fee">One-time Admission Fee (₹)</Label>
+              <Label htmlFor="admission_fee">Admission Fee Amount (₹)</Label>
               <Input
                 id="admission_fee"
                 type="number"
-                value={formData.admission_fee}
-                onChange={(e) => setFormData({ ...formData, admission_fee: parseFloat(e.target.value) || 0 })}
-                placeholder="0"
+                value={admissionFeeData.amount}
+                onChange={(e) => setAdmissionFeeData(prev => ({
+                  ...prev,
+                  amount: parseFloat(e.target.value) || 0
+                }))}
+                placeholder="1500"
+                disabled={admissionFeeData.loading || admissionFeeData.saving}
                 data-testid="admission-fee-input"
               />
             </div>
+            <div className="space-y-2">
+              <Button
+                onClick={updateAdmissionFee}
+                disabled={admissionFeeData.saving}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                data-testid="update-admission-fee-btn"
+              >
+                {admissionFeeData.saving ? (
+                  <div className="flex items-center">
+                    <div className="spinner mr-2"></div>
+                    Updating...
+                  </div>
+                ) : (
+                  '💾 Update Fee'
+                )}
+              </Button>
+            </div>
             <div className="text-sm text-slate-600">
-              <strong>Current Admission Fee:</strong> {formatCurrency(formData.admission_fee)}
+              <strong>Current Fee:</strong> {formatCurrency(admissionFeeData.amount)}
             </div>
           </div>
-          <div className="mt-3 text-xs text-slate-500">
-            This fee is charged once when a member first joins the gym, in addition to their chosen membership plan.
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="text-sm text-blue-800">
+              <strong>📋 Important:</strong> This admission fee is only applied to <strong>Monthly Membership Plans</strong>. 
+              Quarterly and Six-monthly plans do not include admission fees. Changes take effect immediately for new member registrations.
+            </div>
           </div>
         </CardContent>
       </Card>
