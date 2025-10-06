@@ -85,6 +85,8 @@ const PaymentManagement = () => {
       description: '',
       transaction_id: ''
     });
+    setShowRazorpay(false);
+    setSelectedMemberForPayment(null);
   };
 
   const getMemberName = (memberId) => {
