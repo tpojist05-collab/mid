@@ -335,9 +335,9 @@ const MemberManagement = () => {
               <SelectValue placeholder="Select membership type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="monthly">Monthly - ₹2,000 + ₹1,500 (admission)</SelectItem>
-              <SelectItem value="quarterly">Quarterly - ₹5,500 + ₹1,500 (admission)</SelectItem>
-              <SelectItem value="six_monthly">Six Monthly - ₹10,500 + ₹1,500 (admission)</SelectItem>
+              <SelectItem value="monthly">Monthly Plan - ₹2,000</SelectItem>
+              <SelectItem value="quarterly">Quarterly Plan - ₹5,500</SelectItem>
+              <SelectItem value="six_monthly">Six Monthly Plan - ₹10,500</SelectItem>
             </SelectContent>
           </Select>
         </div>
