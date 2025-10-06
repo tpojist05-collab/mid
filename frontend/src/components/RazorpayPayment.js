@@ -26,7 +26,7 @@ const RazorpayPayment = ({ member, amount, description, onSuccess, onError }) =>
         key: key_id,
         amount: razorpay_amount,
         currency: currency,
-        name: 'FitTrack Gym Management',
+        name: 'Iron Paradise Gym',
         description: description,
         order_id: order_id,
         handler: async function (response) {
