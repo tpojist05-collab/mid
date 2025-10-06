@@ -488,6 +488,59 @@ async def update_member(member_id: str, member_update: MemberCreate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.delete("/members/{member_id}")
+async def delete_member(member_id: str, current_user: User = Depends(get_current_active_user)):
+    try:
+        # Check if member exists
+        member = await db.members.find_one({"id": member_id})
+        if not member:
+            raise HTTPException(status_code=404, detail="Member not found")
+        
+        # Only admin can delete members, staff can only suspend
+        if current_user.role != UserRole.ADMIN:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only administrators can delete members. Use suspend instead."
+            )
+        
+        # Delete member and associated data
+        await db.members.delete_one({"id": member_id})
+        await db.payments.delete_many({"member_id": member_id})
+        await db.reminder_logs.delete_many({"member_id": member_id})
+        
+        return {"message": f"Member {member['name']} deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.patch("/members/{member_id}/status")
+async def update_member_status(
+    member_id: str, 
+    status: MemberStatus,
+    current_user: User = Depends(get_current_active_user)
+):
+    try:
+        member = await db.members.find_one({"id": member_id})
+        if not member:
+            raise HTTPException(status_code=404, detail="Member not found")
+        
+        await db.members.update_one(
+            {"id": member_id},
+            {"$set": {
+                "member_status": status.value,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        return {"message": f"Member status updated to {status.value}"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Payment Management Routes
 @api_router.post("/payments", response_model=PaymentRecord)
 async def record_payment(payment_data: PaymentCreate):
