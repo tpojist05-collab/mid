@@ -785,6 +785,7 @@ async def create_member(member_data: MemberCreate, current_user: User = Depends(
             membership_start=join_date,
             membership_end=membership_end,
             monthly_fee_amount=monthly_fee,
+            admission_fee_amount=admission_fee,
             total_amount_due=total_due
         )
         
