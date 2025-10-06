@@ -299,9 +299,13 @@ async def get_expiring_members(days: int = 7):
             "membership_end": {"$lte": expiry_date.isoformat()}
         }).to_list(1000)
         
+        if not members:
+            return []
+            
         return [Member(**parse_from_mongo(member)) for member in members]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error fetching expiring members: {e}")
+        return []  # Return empty list instead of raising exception
 
 # Include the router in the main app
 app.include_router(api_router)
