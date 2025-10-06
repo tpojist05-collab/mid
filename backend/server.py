@@ -314,6 +314,102 @@ async def require_admin_role(current_user: User = Depends(get_current_active_use
         )
     return current_user
 
+async def check_permission(user: User, module: str, action: str) -> bool:
+    """Check if user has specific permission"""
+    if user.role == UserRole.ADMIN:
+        return True  # Admin has all permissions
+    
+    # Check user's cached permissions
+    permission_key = f"{module}:{action}"
+    return permission_key in user.permissions
+
+def require_permission(module: str, action: str):
+    """Decorator factory for permission checking"""
+    async def permission_checker(current_user: User = Depends(get_current_active_user)):
+        if not await check_permission(current_user, module, action):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permission denied: {module}:{action}"
+            )
+        return current_user
+    return permission_checker
+
+async def initialize_default_permissions():
+    """Initialize default permissions in database"""
+    try:
+        # Check if permissions already exist
+        existing_perms = await db.permissions.count_documents({})
+        if existing_perms > 0:
+            return
+        
+        # Define default permissions
+        default_permissions = [
+            Permission(name="View Members", description="View member list and details", module="members", actions=["read"]),
+            Permission(name="Add Members", description="Add new members", module="members", actions=["write"]),
+            Permission(name="Edit Members", description="Edit member information", module="members", actions=["write"]),
+            Permission(name="Delete Members", description="Delete members", module="members", actions=["delete"]),
+            Permission(name="View Payments", description="View payment records", module="payments", actions=["read"]),
+            Permission(name="Process Payments", description="Process and record payments", module="payments", actions=["write"]),
+            Permission(name="View Reports", description="View financial and member reports", module="reports", actions=["read"]),
+            Permission(name="Send Reminders", description="Send SMS/WhatsApp reminders", module="reminders", actions=["write"]),
+            Permission(name="System Settings", description="Access system settings", module="settings", actions=["read", "write"]),
+            Permission(name="User Management", description="Manage users and roles", module="users", actions=["read", "write", "delete"]),
+            Permission(name="Role Management", description="Create and manage custom roles", module="roles", actions=["read", "write", "delete"])
+        ]
+        
+        for perm in default_permissions:
+            perm_dict = prepare_for_mongo(perm.dict())
+            await db.permissions.insert_one(perm_dict)
+        
+        logger.info("Default permissions initialized")
+        
+    except Exception as e:
+        logger.error(f"Error initializing permissions: {e}")
+
+async def update_user_permissions(user_id: str):
+    """Update user's cached permissions based on role"""
+    try:
+        user = await db.users.find_one({"id": user_id})
+        if not user:
+            return
+        
+        permissions = []
+        
+        if user.get("role") == "admin":
+            # Admin gets all permissions
+            all_perms = await db.permissions.find().to_list(1000)
+            for perm in all_perms:
+                for action in perm.get("actions", []):
+                    permissions.append(f"{perm['module']}:{action}")
+        
+        elif user.get("custom_role_id"):
+            # Get permissions from custom role
+            custom_role = await db.custom_roles.find_one({"id": user["custom_role_id"]})
+            if custom_role:
+                for perm_id in custom_role.get("permissions", []):
+                    perm = await db.permissions.find_one({"id": perm_id})
+                    if perm:
+                        for action in perm.get("actions", []):
+                            permissions.append(f"{perm['module']}:{action}")
+        
+        else:
+            # Default role permissions
+            role_permissions = {
+                "manager": ["members:read", "members:write", "payments:read", "payments:write", "reports:read", "reminders:write"],
+                "trainer": ["members:read", "reminders:write"],
+                "receptionist": ["members:read", "members:write", "payments:read", "payments:write"]
+            }
+            permissions = role_permissions.get(user.get("role"), [])
+        
+        # Update user's cached permissions
+        await db.users.update_one(
+            {"id": user_id},
+            {"$set": {"permissions": permissions}}
+        )
+        
+    except Exception as e:
+        logger.error(f"Error updating user permissions: {e}")
+
 # Helper functions
 def calculate_membership_fee(membership_type: MembershipType) -> float:
     """Calculate membership fee based on type"""
