@@ -558,8 +558,8 @@ class IronParadiseGymAPITester:
 
     def test_razorpay_integration(self):
         """Test Razorpay payment gateway integration"""
-        if not self.created_member_id:
-            self.log_test("Razorpay Integration", False, "No member ID available for testing")
+        if not self.created_member_id or not self.auth_token:
+            self.log_test("Razorpay Integration", False, "No member ID or auth token available for testing")
             return
             
         order_data = {
@@ -569,7 +569,7 @@ class IronParadiseGymAPITester:
             "description": "Monthly membership fee"
         }
         
-        success, response = self.make_request('POST', 'razorpay/create-order', order_data)
+        success, response = self.make_request('POST', 'razorpay/create-order', order_data, auth_required=True)
         
         if success:
             required_fields = ['order_id', 'amount', 'currency', 'key_id']
