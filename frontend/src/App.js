@@ -5,6 +5,7 @@ import axios from "axios";
 import Dashboard from "./components/Dashboard";
 import MemberManagement from "./components/MemberManagement";
 import PaymentManagement from "./components/PaymentManagement";
+import ReminderManagement from "./components/ReminderManagement";
 import Navigation from "./components/Navigation";
 import { Toaster } from "./components/ui/sonner";
 
