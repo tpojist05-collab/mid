@@ -239,25 +239,49 @@ const MemberManagement = () => {
     });
   };
 
-  // Filter members based on search and status
+  // Filter members based on search, status, and view mode
   const filteredMembers = members.filter(member => {
     const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          member.phone.includes(searchTerm);
     
-    if (statusFilter === 'all') return matchesSearch;
-    
+    if (!matchesSearch) return false;
+
+    // Filter by view mode first
     const isExpired = new Date(member.membership_end) < new Date();
+    const isActiveStatus = member.member_status === 'active' && member.current_payment_status === 'paid' && !isExpired;
+    
+    switch (viewMode) {
+      case 'active':
+        if (!isActiveStatus) return false;
+        break;
+      case 'inactive':
+        if (isActiveStatus) return false;
+        break;
+      case 'all':
+      default:
+        // Show all members
+        break;
+    }
+    
+    // Then filter by status filter
+    if (statusFilter === 'all') return true;
     
     switch (statusFilter) {
       case 'active':
-        return matchesSearch && member.current_payment_status === 'paid' && !isExpired;
+        return member.member_status === 'active' && member.current_payment_status === 'paid' && !isExpired;
+      case 'suspended':
+        return member.member_status === 'suspended';
+      case 'frozen':
+        return member.member_status === 'frozen';
+      case 'inactive':
+        return member.member_status === 'inactive';
       case 'pending':
-        return matchesSearch && member.current_payment_status === 'pending';
+        return member.current_payment_status === 'pending';
       case 'expired':
-        return matchesSearch && isExpired;
+        return isExpired;
       default:
-        return matchesSearch;
+        return true;
     }
   });
 
