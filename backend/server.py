@@ -1510,6 +1510,330 @@ async def initialize_receipt_templates():
         logger.error(f"Error initializing receipt templates: {e}")
         raise
 
+# Receipt Management API
+@app.get("/api/receipts/templates", response_model=List[dict])
+async def get_receipt_templates(current_user: dict = Depends(get_current_user)):
+    """Get all receipt templates"""
+    try:
+        if current_user["role"] != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        templates = await db.receipt_templates.find().to_list(length=None)
+        return templates
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/receipts/templates/{template_id}")
+async def get_receipt_template(template_id: str, current_user: dict = Depends(get_current_user)):
+    """Get specific receipt template"""
+    try:
+        if current_user["role"] != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        template = await db.receipt_templates.find_one({"id": template_id})
+        if not template:
+            raise HTTPException(status_code=404, detail="Template not found")
+        
+        return template
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/receipts/templates")
+async def create_receipt_template(template_data: dict, current_user: dict = Depends(get_current_user)):
+    """Create new receipt template"""
+    try:
+        if current_user["role"] != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        template = {
+            "id": str(uuid.uuid4()),
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+            **template_data
+        }
+        
+        await db.receipt_templates.insert_one(template)
+        return {"message": "Template created successfully", "template_id": template["id"]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/receipts/templates/{template_id}")
+async def update_receipt_template(template_id: str, template_data: dict, current_user: dict = Depends(get_current_user)):
+    """Update receipt template"""
+    try:
+        if current_user["role"] != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        template_data["updated_at"] = datetime.now(timezone.utc)
+        
+        result = await db.receipt_templates.update_one(
+            {"id": template_id},
+            {"$set": template_data}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Template not found")
+        
+        return {"message": "Template updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/receipts/templates/{template_id}")
+async def delete_receipt_template(template_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete receipt template"""
+    try:
+        if current_user["role"] != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
+        
+        # Check if it's the default template
+        template = await db.receipt_templates.find_one({"id": template_id})
+        if template and template.get("is_default"):
+            raise HTTPException(status_code=400, detail="Cannot delete default template")
+        
+        result = await db.receipt_templates.delete_one({"id": template_id})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Template not found")
+        
+        return {"message": "Template deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/receipts/generate/{payment_id}")
+async def generate_receipt(payment_id: str, template_id: str = None, current_user: dict = Depends(get_current_user)):
+    """Generate receipt for payment"""
+    try:
+        # Get payment details
+        payment = await db.payments.find_one({"id": payment_id})
+        if not payment:
+            raise HTTPException(status_code=404, detail="Payment not found")
+        
+        # Get member details
+        member = await db.members.find_one({"id": payment["member_id"]})
+        if not member:
+            raise HTTPException(status_code=404, detail="Member not found")
+        
+        # Get template
+        if template_id:
+            template = await db.receipt_templates.find_one({"id": template_id})
+        else:
+            template = await db.receipt_templates.find_one({"is_default": True})
+        
+        if not template:
+            raise HTTPException(status_code=404, detail="Receipt template not found")
+        
+        # Generate receipt HTML
+        receipt_html = await generate_receipt_html(payment, member, template)
+        
+        # Store receipt record
+        receipt_record = {
+            "id": str(uuid.uuid4()),
+            "payment_id": payment_id,
+            "member_id": payment["member_id"],
+            "template_id": template["id"],
+            "receipt_html": receipt_html,
+            "generated_by": current_user["id"],
+            "generated_at": datetime.now(timezone.utc)
+        }
+        
+        await db.receipts.insert_one(receipt_record)
+        
+        return {
+            "message": "Receipt generated successfully",
+            "receipt_id": receipt_record["id"],
+            "receipt_html": receipt_html
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+async def generate_receipt_html(payment: dict, member: dict, template: dict) -> str:
+    """Generate HTML receipt from template"""
+    try:
+        html_template = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Payment Receipt</title>
+            <style>
+                body {{
+                    font-family: {template['styles']['font_family']};
+                    font-size: {template['styles']['font_size']};
+                    margin: 0;
+                    padding: 20px;
+                    background-color: #f5f5f5;
+                }}
+                .receipt-container {{
+                    max-width: 600px;
+                    margin: 0 auto;
+                    background-color: white;
+                    padding: 30px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                }}
+                .header {{
+                    text-align: center;
+                    border-bottom: 2px solid {template['styles']['primary_color']};
+                    padding-bottom: 20px;
+                    margin-bottom: 30px;
+                }}
+                .gym-name {{
+                    color: {template['styles']['primary_color']};
+                    font-size: 28px;
+                    font-weight: bold;
+                    margin-bottom: 10px;
+                }}
+                .gym-info {{
+                    color: {template['styles']['secondary_color']};
+                    font-size: 14px;
+                    line-height: 1.6;
+                }}
+                .section {{
+                    margin-bottom: 25px;
+                }}
+                .section-title {{
+                    color: {template['styles']['primary_color']};
+                    font-size: 18px;
+                    font-weight: bold;
+                    margin-bottom: 15px;
+                    border-bottom: 1px solid #eee;
+                    padding-bottom: 5px;
+                }}
+                .info-row {{
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 8px 0;
+                    border-bottom: 1px dotted #ddd;
+                }}
+                .info-label {{
+                    font-weight: bold;
+                    color: {template['styles']['secondary_color']};
+                }}
+                .info-value {{
+                    color: #333;
+                }}
+                .amount-total {{
+                    background-color: {template['styles']['primary_color']};
+                    color: white;
+                    padding: 15px;
+                    border-radius: 5px;
+                    text-align: center;
+                    font-size: 20px;
+                    font-weight: bold;
+                    margin: 20px 0;
+                }}
+                .footer {{
+                    text-align: center;
+                    margin-top: 40px;
+                    padding-top: 20px;
+                    border-top: 2px solid {template['styles']['primary_color']};
+                }}
+                .thank-you {{
+                    color: {template['styles']['primary_color']};
+                    font-size: 18px;
+                    font-weight: bold;
+                    margin-bottom: 15px;
+                }}
+                .terms {{
+                    color: {template['styles']['secondary_color']};
+                    font-size: 12px;
+                    line-height: 1.5;
+                    margin-bottom: 10px;
+                }}
+                .contact-info {{
+                    color: {template['styles']['secondary_color']};
+                    font-size: 12px;
+                }}
+                @media print {{
+                    body {{ background-color: white; }}
+                    .receipt-container {{ box-shadow: none; }}
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="receipt-container">
+                <div class="header">
+                    <div class="gym-name">{template['header']['gym_name']}</div>
+                    <div class="gym-info">
+                        {template['header']['address']}<br>
+                        Phone: {template['header']['phone']}<br>
+                        Email: {template['header']['email']}<br>
+                        Website: {template['header']['website']}
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">Payment Receipt</div>
+                    <div class="info-row">
+                        <span class="info-label">Receipt ID:</span>
+                        <span class="info-value">{payment['id']}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Payment Date:</span>
+                        <span class="info-value">{payment.get('date', datetime.now().strftime('%Y-%m-%d %H:%M:%S')}}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Payment Method:</span>
+                        <span class="info-value">{payment.get('method', 'Online')}</span>
+                    </div>
+                </div>
+                
+                {"" if not template['sections']['show_member_info'] else f'''
+                <div class="section">
+                    <div class="section-title">Member Information</div>
+                    <div class="info-row">
+                        <span class="info-label">Name:</span>
+                        <span class="info-value">{member.get("name", "N/A")}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email:</span>
+                        <span class="info-value">{member.get("email", "N/A")}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Phone:</span>
+                        <span class="info-value">{member.get("phone", "N/A")}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Member ID:</span>
+                        <span class="info-value">{member.get("id", "N/A")}</span>
+                    </div>
+                </div>
+                '''}
+                
+                {"" if not template['sections']['show_service_details'] else f'''
+                <div class="section">
+                    <div class="section-title">Service Details</div>
+                    <div class="info-row">
+                        <span class="info-label">Service:</span>
+                        <span class="info-value">{payment.get("description", "Gym Service")}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Amount:</span>
+                        <span class="info-value">₹{payment.get("amount", 0)}</span>
+                    </div>
+                </div>
+                '''}
+                
+                <div class="amount-total">
+                    Total Paid: ₹{payment.get('amount', 0)}
+                </div>
+                
+                <div class="footer">
+                    <div class="thank-you">{template['footer']['thank_you_message']}</div>
+                    {"" if not template['sections']['show_terms'] else f'<div class="terms">{template["footer"]["terms_text"]}</div>'}
+                    <div class="contact-info">{template['footer']['contact_info']}</div>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        return html_template
+        
+    except Exception as e:
+        logger.error(f"Error generating receipt HTML: {e}")
+        raise
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     """Cleanup on shutdown"""
