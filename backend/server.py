@@ -1632,7 +1632,7 @@ async def generate_receipt(payment_id: str, template_id: str = None, current_use
             "member_id": payment["member_id"],
             "template_id": template["id"],
             "receipt_html": receipt_html,
-            "generated_by": current_user["id"],
+            "generated_by": current_user.id,
             "generated_at": datetime.now(timezone.utc)
         }
         
