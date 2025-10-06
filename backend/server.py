@@ -807,7 +807,7 @@ async def get_members(
         if status:
             query["member_status"] = status
         
-        members = await db.members.find(query).to_list(1000)
+        members = await db.members.find(query).to_list(None)  # No limit on members
         return [Member(**parse_from_mongo(member)) for member in members]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
