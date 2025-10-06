@@ -13,6 +13,7 @@ const Navigation = ({ currentPage, setCurrentPage, isAdmin }) => {
   if (isAdmin) {
     navItems.push(
       { id: 'users', label: 'Users', icon: '👤' },
+      { id: 'receipts', label: 'Receipts', icon: '🧾' },
       { id: 'settings', label: 'Settings', icon: '⚙️' }
     );
   }
