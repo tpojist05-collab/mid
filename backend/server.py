@@ -1579,10 +1579,10 @@ async def update_receipt_template(template_id: str, template_data: dict, current
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/api/receipts/templates/{template_id}")
-async def delete_receipt_template(template_id: str, current_user: dict = Depends(get_current_user)):
+async def delete_receipt_template(template_id: str, current_user: User = Depends(get_current_active_user)):
     """Delete receipt template"""
     try:
-        if current_user["role"] != "admin":
+        if current_user.role != UserRole.ADMIN:
             raise HTTPException(status_code=403, detail="Admin access required")
         
         # Check if it's the default template
