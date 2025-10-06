@@ -788,6 +788,7 @@ class IronParadiseGymAPITester:
         
         print("\n💰 PAYMENT MANAGEMENT TESTS")
         print("-" * 40)
+        self.test_razorpay_integration()
         self.test_record_payment()
         self.test_get_all_payments()
         self.test_get_member_payments()
