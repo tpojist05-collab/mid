@@ -44,6 +44,8 @@ const AppContent = () => {
         return <ReminderManagement />;
       case 'users':
         return <UserManagement />;
+      case 'receipts':
+        return <ReceiptManagement />;
       case 'settings':
         return <SettingsManagement />;
       default:
