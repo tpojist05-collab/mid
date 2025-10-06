@@ -421,9 +421,9 @@ async def calculate_membership_fee(membership_type: MembershipType) -> float:
     else:
         # Default rates
         rates = {
-            "MONTHLY": 2000.0,
-            "QUARTERLY": 5500.0,  # 3 months with discount
-            "SIX_MONTHLY": 10500.0  # 6 months with discount
+            "monthly": 2000.0,
+            "quarterly": 5500.0,  # 3 months with discount
+            "six_monthly": 10500.0  # 6 months with discount
         }
     
     membership_key = membership_type.value if hasattr(membership_type, 'value') else str(membership_type)
