@@ -114,7 +114,7 @@ class Member(BaseModel):
     current_payment_status: PaymentStatus = PaymentStatus.PENDING
     member_status: MemberStatus = MemberStatus.ACTIVE
     total_amount_due: float
-    admission_fee_amount: float = 1500.0
+    admission_fee_amount: float = 0.0  # Will be set from gym settings
     monthly_fee_amount: float
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
