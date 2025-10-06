@@ -521,10 +521,119 @@ async def get_current_user_info(current_user: User = Depends(get_current_active_
     return current_user
 
 @api_router.get("/users", response_model=List[User])
-async def get_all_users(current_admin: User = Depends(require_admin_role)):
+async def get_all_users(current_user: User = Depends(require_permission("users", "read"))):
     try:
         users = await db.users.find().to_list(1000)
         return [User(**parse_from_mongo(user)) for user in users]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Role Management Routes
+@api_router.get("/roles", response_model=List[CustomRole])
+async def get_roles(current_user: User = Depends(require_permission("roles", "read"))):
+    try:
+        roles = await db.custom_roles.find().to_list(1000)
+        return [CustomRole(**parse_from_mongo(role)) for role in roles]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/roles", response_model=CustomRole)
+async def create_role(
+    role_data: RoleCreate, 
+    current_user: User = Depends(require_permission("roles", "write"))
+):
+    try:
+        # Check if role name already exists
+        existing_role = await db.custom_roles.find_one({"name": role_data.name})
+        if existing_role:
+            raise HTTPException(status_code=400, detail="Role name already exists")
+        
+        role = CustomRole(
+            **role_data.dict(),
+            created_by=current_user.username
+        )
+        
+        role_dict = prepare_for_mongo(role.dict())
+        await db.custom_roles.insert_one(role_dict)
+        
+        # Send notification
+        await send_system_notification(
+            f"New role '{role.name}' created",
+            f"Role created by {current_user.full_name}",
+            "info"
+        )
+        
+        return role
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/roles/{role_id}", response_model=CustomRole)
+async def update_role(
+    role_id: str,
+    role_update: RoleUpdate,
+    current_user: User = Depends(require_permission("roles", "write"))
+):
+    try:
+        existing_role = await db.custom_roles.find_one({"id": role_id})
+        if not existing_role:
+            raise HTTPException(status_code=404, detail="Role not found")
+        
+        update_data = {k: v for k, v in role_update.dict().items() if v is not None}
+        update_data['updated_at'] = datetime.now(timezone.utc)
+        
+        update_data = prepare_for_mongo(update_data)
+        
+        await db.custom_roles.update_one(
+            {"id": role_id},
+            {"$set": update_data}
+        )
+        
+        # Update permissions for all users with this role
+        users_with_role = await db.users.find({"custom_role_id": role_id}).to_list(1000)
+        for user in users_with_role:
+            await update_user_permissions(user["id"])
+        
+        updated_role = await db.custom_roles.find_one({"id": role_id})
+        return CustomRole(**parse_from_mongo(updated_role))
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/roles/{role_id}")
+async def delete_role(
+    role_id: str,
+    current_user: User = Depends(require_permission("roles", "delete"))
+):
+    try:
+        # Check if any users have this role
+        users_with_role = await db.users.count_documents({"custom_role_id": role_id})
+        if users_with_role > 0:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Cannot delete role. {users_with_role} users currently have this role."
+            )
+        
+        result = await db.custom_roles.delete_one({"id": role_id})
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Role not found")
+        
+        return {"message": "Role deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/permissions", response_model=List[Permission])
+async def get_permissions(current_user: User = Depends(require_permission("roles", "read"))):
+    try:
+        permissions = await db.permissions.find().to_list(1000)
+        return [Permission(**parse_from_mongo(perm)) for perm in permissions]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
