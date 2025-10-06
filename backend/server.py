@@ -32,7 +32,7 @@ db = client[os.environ['DB_NAME']]
 razorpay_client = razorpay.Client(auth=(os.environ['RAZORPAY_KEY_ID'], os.environ['RAZORPAY_KEY_SECRET']))
 
 # Create the main app without a prefix
-app = FastAPI(title="Gym Membership Tracker")
+app = FastAPI(title="Iron Paradise Gym Management System")
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
