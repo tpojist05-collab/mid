@@ -5,7 +5,8 @@ const Navigation = ({ currentPage, setCurrentPage }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'members', label: 'Members', icon: '👥' },
-    { id: 'payments', label: 'Payments', icon: '💳' }
+    { id: 'payments', label: 'Payments', icon: '💳' },
+    { id: 'reminders', label: 'Reminders', icon: '📱' }
   ];
 
   return (
