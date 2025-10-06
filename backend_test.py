@@ -378,19 +378,19 @@ class IronParadiseGymAPITester:
 
     def test_record_payment(self):
         """Test recording a payment"""
-        if not self.created_member_id:
-            self.log_test("Record Payment", False, "No member ID available for testing")
+        if not self.created_member_id or not self.auth_token:
+            self.log_test("Record Payment", False, "No member ID or auth token available for testing")
             return
             
         payment_data = {
             "member_id": self.created_member_id,
             "amount": 3500.0,
-            "payment_method": "cash",
+            "payment_method": "upi",
             "description": "Monthly membership fee + admission fee",
-            "transaction_id": "TEST_TXN_001"
+            "transaction_id": "UPI_TXN_001_RAJESH"
         }
         
-        success, response = self.make_request('POST', 'payments', payment_data)
+        success, response = self.make_request('POST', 'payments', payment_data, auth_required=True)
         
         if success:
             required_fields = ['id', 'member_id', 'amount', 'payment_method', 'description']
