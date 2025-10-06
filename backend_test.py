@@ -77,12 +77,189 @@ class IronParadiseGymAPITester:
     def test_root_endpoint(self):
         """Test the root API endpoint"""
         success, response = self.make_request('GET', '')
-        expected_message = "Gym Membership Tracker API"
+        expected_message = "Iron Paradise Gym Management API"
         
         if success and response.get('message') == expected_message:
             self.log_test("Root Endpoint", True, "API is accessible and responding correctly")
         else:
             self.log_test("Root Endpoint", False, f"Expected message '{expected_message}', got: {response}")
+
+    def test_authentication_login(self):
+        """Test authentication with test credentials"""
+        login_data = {
+            "username": "test_admin",
+            "password": "TestPass123!"
+        }
+        
+        # Use form data for OAuth2PasswordRequestForm
+        success, response = self.make_request('POST', 'auth/login', login_data)
+        
+        if success:
+            required_fields = ['access_token', 'token_type', 'user']
+            missing_fields = [field for field in required_fields if field not in response]
+            
+            if not missing_fields:
+                self.auth_token = response['access_token']
+                self.admin_user = response['user']
+                user_role = self.admin_user.get('role')
+                
+                if user_role == 'admin':
+                    self.log_test("Authentication Login", True, f"Successfully logged in as admin: {self.admin_user.get('username')}")
+                else:
+                    self.log_test("Authentication Login", False, f"Expected admin role, got: {user_role}")
+            else:
+                self.log_test("Authentication Login", False, f"Missing required fields: {missing_fields}", response)
+        else:
+            self.log_test("Authentication Login", False, "Failed to authenticate with test credentials", response)
+
+    def test_jwt_token_validation(self):
+        """Test JWT token validation"""
+        if not self.auth_token:
+            self.log_test("JWT Token Validation", False, "No auth token available for testing")
+            return
+            
+        success, response = self.make_request('GET', 'auth/me', auth_required=True)
+        
+        if success:
+            if response.get('username') == 'test_admin' and response.get('role') == 'admin':
+                self.log_test("JWT Token Validation", True, "JWT token is valid and returns correct user info")
+            else:
+                self.log_test("JWT Token Validation", False, "JWT token validation returned incorrect user data", response)
+        else:
+            self.log_test("JWT Token Validation", False, "JWT token validation failed", response)
+
+    def test_unauthorized_access(self):
+        """Test unauthorized access to protected endpoints"""
+        # Try to access admin endpoint without token
+        success, response = self.make_request('GET', 'users', expected_status=401)
+        
+        if success:  # success here means we got the expected 401 status
+            self.log_test("Unauthorized Access Protection", True, "Protected endpoint correctly returns 401 without token")
+        else:
+            self.log_test("Unauthorized Access Protection", False, "Protected endpoint should return 401 without token", response)
+
+    def test_payment_gateways_initialization(self):
+        """Test payment gateways initialization and configuration"""
+        success, response = self.make_request('GET', 'payment-gateways', auth_required=True)
+        
+        if success:
+            if isinstance(response, list):
+                expected_gateways = ['razorpay', 'payu', 'google_pay', 'paytm', 'phonepe']
+                found_gateways = [gw.get('provider') for gw in response]
+                
+                missing_gateways = [gw for gw in expected_gateways if gw not in found_gateways]
+                
+                if not missing_gateways:
+                    enabled_count = sum(1 for gw in response if gw.get('is_enabled', False))
+                    self.log_test("Payment Gateways Initialization", True, 
+                                f"All 5 payment gateways found, {enabled_count} enabled: {found_gateways}")
+                else:
+                    self.log_test("Payment Gateways Initialization", False, 
+                                f"Missing gateways: {missing_gateways}, found: {found_gateways}")
+            else:
+                self.log_test("Payment Gateways Initialization", False, "Expected list response for payment gateways", response)
+        else:
+            self.log_test("Payment Gateways Initialization", False, "Failed to get payment gateways", response)
+
+    def test_receipt_templates_system(self):
+        """Test receipt template system"""
+        if not self.auth_token:
+            self.log_test("Receipt Templates System", False, "No auth token available for testing")
+            return
+            
+        # Test getting receipt templates (admin only)
+        success, response = self.make_request('GET', 'receipts/templates', auth_required=True)
+        
+        if success:
+            if isinstance(response, list):
+                default_template = next((t for t in response if t.get('is_default')), None)
+                
+                if default_template:
+                    template_id = default_template.get('id')
+                    self.log_test("Receipt Templates System", True, 
+                                f"Found {len(response)} templates, default template ID: {template_id}")
+                    
+                    # Test getting specific template
+                    self.test_specific_receipt_template(template_id)
+                else:
+                    self.log_test("Receipt Templates System", False, "No default template found", response)
+            else:
+                self.log_test("Receipt Templates System", False, "Expected list response for templates", response)
+        else:
+            self.log_test("Receipt Templates System", False, "Failed to get receipt templates", response)
+
+    def test_specific_receipt_template(self, template_id: str):
+        """Test getting a specific receipt template"""
+        success, response = self.make_request('GET', f'receipts/templates/{template_id}', auth_required=True)
+        
+        if success:
+            required_fields = ['id', 'name', 'template_type', 'header', 'styles', 'sections', 'footer']
+            missing_fields = [field for field in required_fields if field not in response]
+            
+            if not missing_fields:
+                self.log_test("Specific Receipt Template", True, f"Template retrieved with all required fields")
+            else:
+                self.log_test("Specific Receipt Template", False, f"Missing template fields: {missing_fields}")
+        else:
+            self.log_test("Specific Receipt Template", False, "Failed to get specific template", response)
+
+    def test_receipt_template_crud(self):
+        """Test receipt template CRUD operations"""
+        if not self.auth_token:
+            self.log_test("Receipt Template CRUD", False, "No auth token available for testing")
+            return
+            
+        # Create new template
+        template_data = {
+            "name": "Test Receipt Template",
+            "is_default": False,
+            "template_type": "payment_receipt",
+            "header": {
+                "gym_name": "Test Gym",
+                "address": "Test Address"
+            },
+            "styles": {
+                "primary_color": "#000000"
+            },
+            "sections": {
+                "show_payment_details": True,
+                "show_member_info": True
+            },
+            "footer": {
+                "thank_you_message": "Thank you for testing!"
+            }
+        }
+        
+        success, response = self.make_request('POST', 'receipts/templates', template_data, auth_required=True)
+        
+        if success:
+            template_id = response.get('template_id')
+            if template_id:
+                self.created_template_id = template_id
+                self.log_test("Create Receipt Template", True, f"Template created with ID: {template_id}")
+                
+                # Test update
+                self.test_update_receipt_template(template_id)
+            else:
+                self.log_test("Create Receipt Template", False, "No template ID returned", response)
+        else:
+            self.log_test("Create Receipt Template", False, "Failed to create template", response)
+
+    def test_update_receipt_template(self, template_id: str):
+        """Test updating a receipt template"""
+        update_data = {
+            "name": "Updated Test Template",
+            "header": {
+                "gym_name": "Updated Test Gym"
+            }
+        }
+        
+        success, response = self.make_request('PUT', f'receipts/templates/{template_id}', update_data, auth_required=True)
+        
+        if success:
+            self.log_test("Update Receipt Template", True, "Template updated successfully")
+        else:
+            self.log_test("Update Receipt Template", False, "Failed to update template", response)
 
     def test_create_member(self):
         """Test creating a new member"""
