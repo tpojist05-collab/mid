@@ -646,9 +646,9 @@ class IronParadiseGymAPITester:
             return
             
         pricing_tests = [
-            {"type": "monthly", "expected_fee": 2000.0, "expected_total": 2000.0},
-            {"type": "quarterly", "expected_fee": 5500.0, "expected_total": 5500.0},
-            {"type": "six_monthly", "expected_fee": 10500.0, "expected_total": 10500.0}
+            {"type": "monthly", "expected_fee": 2000.0, "expected_total": 4000.0},  # Includes ₹2000 admission fee
+            {"type": "quarterly", "expected_fee": 5500.0, "expected_total": 5500.0},  # No admission fee
+            {"type": "six_monthly", "expected_fee": 10500.0, "expected_total": 10500.0}  # No admission fee
         ]
         
         all_passed = True
