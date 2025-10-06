@@ -261,13 +261,13 @@
 
 ## test_plan:
   current_focus:
-    - "Form Input Focus Fix"
-    - "PayU Integration"
-    - "UI/UX Improvements"
-    - "Receipt Customization"
-  stuck_tasks: []
-  test_all: false
-  test_priority: "high_first"
+    - "Backend Testing Complete"
+    - "Frontend Integration Testing"
+  stuck_tasks: 
+    - "Razorpay Order Creation (Authentication Issues)"
+    - "Receipt Template Listing (MongoDB ObjectId Serialization)"
+  test_all: true
+  test_priority: "backend_complete"
 
 ## agent_communication:
     - agent: "main"
