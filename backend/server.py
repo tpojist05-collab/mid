@@ -995,7 +995,7 @@ async def update_member_start_date(
         
         # Send notification
         await send_system_notification(
-            f"Member start date updated",
+            "Member start date updated",
             f"'{existing_member.get('name')}' start date changed to {new_start_date.strftime('%Y-%m-%d')} by {current_user.full_name}",
             "info"
         )
