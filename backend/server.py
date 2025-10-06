@@ -254,6 +254,48 @@ class PaymentGateway(BaseModel):
     config: dict = Field(default_factory=dict)
     supported_methods: List[str] = Field(default_factory=list)
 
+class Payment(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    member_id: str
+    amount: float
+    method: PaymentMethod = PaymentMethod.CASH
+    description: str = ""
+    payment_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    status: PaymentStatus = PaymentStatus.COMPLETED
+    transaction_id: Optional[str] = None
+    gateway_response: Optional[dict] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class MonthlyEarnings(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    year: int
+    month: int
+    month_name: str
+    total_earnings: float = 0.0
+    cash_earnings: float = 0.0
+    upi_earnings: float = 0.0
+    card_earnings: float = 0.0
+    online_earnings: float = 0.0  # Razorpay, PayU, etc.
+    total_payments: int = 0
+    cash_payments: int = 0
+    upi_payments: int = 0
+    card_payments: int = 0
+    online_payments: int = 0
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class PaymentSummary(BaseModel):
+    date: str
+    total_amount: float
+    cash_amount: float
+    upi_amount: float
+    card_amount: float
+    online_amount: float
+    payment_count: int
+    cash_count: int
+    upi_count: int
+    card_count: int
+    online_count: int
 class SystemNotification(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
