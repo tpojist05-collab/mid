@@ -10,6 +10,7 @@ import { Textarea } from './ui/textarea';
 import { apiClient } from '../App';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
+import MemberForm from './forms/MemberForm';
 
 const MemberManagement = () => {
   const [members, setMembers] = useState([]);
