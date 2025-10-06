@@ -6,8 +6,13 @@ import Dashboard from "./components/Dashboard";
 import MemberManagement from "./components/MemberManagement";
 import PaymentManagement from "./components/PaymentManagement";
 import ReminderManagement from "./components/ReminderManagement";
+import SettingsManagement from "./components/SettingsManagement";
+import LoginForm from "./components/LoginForm";
 import Navigation from "./components/Navigation";
 import { Toaster } from "./components/ui/sonner";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { Button } from "./components/ui/button";
+import { Badge } from "./components/ui/badge";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
