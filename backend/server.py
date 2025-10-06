@@ -765,6 +765,10 @@ async def get_permissions(current_user: User = Depends(require_permission("roles
 @api_router.post("/members", response_model=Member)
 async def create_member(member_data: MemberCreate, current_user: User = Depends(get_current_active_user)):
     try:
+        # Get gym settings for admission fee
+        gym_settings = await db.gym_settings.find_one()
+        admission_fee = gym_settings.get('admission_fee', 0) if gym_settings else 0
+        
         # Set join date if not provided
         join_date = member_data.join_date or datetime.now(timezone.utc)
         
@@ -773,7 +777,7 @@ async def create_member(member_data: MemberCreate, current_user: User = Depends(
         membership_end = calculate_membership_end_date(join_date, member_data.membership_type)
         
         # Calculate total amount due (admission fee + membership fee)
-        total_due = 1500.0 + monthly_fee
+        total_due = admission_fee + monthly_fee
         
         member = Member(
             **member_data.dict(exclude={'join_date'}),
