@@ -484,6 +484,85 @@ async def get_admission_fee() -> float:
         return settings["amount"]
     return 1500.0  # Default admission fee
 
+async def update_monthly_earnings(payment: dict):
+    """Update monthly earnings when a payment is recorded"""
+    try:
+        payment_date = payment['payment_date']
+        if isinstance(payment_date, str):
+            payment_date = datetime.fromisoformat(payment_date)
+        
+        year = payment_date.year
+        month = payment_date.month
+        month_name = payment_date.strftime('%B')
+        amount = payment['amount']
+        method = payment['method']
+        
+        # Find or create monthly earnings record
+        earnings_query = {"year": year, "month": month}
+        existing_earnings = await db.monthly_earnings.find_one(earnings_query)
+        
+        if existing_earnings:
+            # Update existing record
+            update_data = {
+                "total_earnings": existing_earnings["total_earnings"] + amount,
+                "total_payments": existing_earnings["total_payments"] + 1,
+                "updated_at": datetime.now(timezone.utc)
+            }
+            
+            # Update specific payment method earnings
+            if method == "cash":
+                update_data["cash_earnings"] = existing_earnings["cash_earnings"] + amount
+                update_data["cash_payments"] = existing_earnings["cash_payments"] + 1
+            elif method == "upi":
+                update_data["upi_earnings"] = existing_earnings["upi_earnings"] + amount
+                update_data["upi_payments"] = existing_earnings["upi_payments"] + 1
+            elif method == "card":
+                update_data["card_earnings"] = existing_earnings["card_earnings"] + amount
+                update_data["card_payments"] = existing_earnings["card_payments"] + 1
+            else:
+                # Online payment gateways
+                update_data["online_earnings"] = existing_earnings["online_earnings"] + amount
+                update_data["online_payments"] = existing_earnings["online_payments"] + 1
+            
+            await db.monthly_earnings.update_one(earnings_query, {"$set": update_data})
+        else:
+            # Create new record
+            earnings_data = {
+                "year": year,
+                "month": month,
+                "month_name": month_name,
+                "total_earnings": amount,
+                "cash_earnings": amount if method == "cash" else 0.0,
+                "upi_earnings": amount if method == "upi" else 0.0,
+                "card_earnings": amount if method == "card" else 0.0,
+                "online_earnings": amount if method not in ["cash", "upi", "card"] else 0.0,
+                "total_payments": 1,
+                "cash_payments": 1 if method == "cash" else 0,
+                "upi_payments": 1 if method == "upi" else 0,
+                "card_payments": 1 if method == "card" else 0,
+                "online_payments": 1 if method not in ["cash", "upi", "card"] else 0,
+                "created_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc)
+            }
+            
+            await db.monthly_earnings.insert_one(earnings_data)
+        
+        logger.info(f"Monthly earnings updated for {month_name} {year}: +₹{amount} ({method})")
+        
+    except Exception as e:
+        logger.error(f"Error updating monthly earnings: {e}")
+
+async def get_payment_method_category(method: str) -> str:
+    """Categorize payment method for earnings tracking"""
+    if method in ["cash"]:
+        return "cash"
+    elif method in ["upi", "google_pay", "phonepe", "paytm"]:
+        return "upi"
+    elif method in ["card"]:
+        return "card"
+    else:
+        return "online"
+
 def calculate_membership_end_date(start_date: datetime, membership_type: MembershipType) -> datetime:
     """Calculate membership end date based on type"""
     duration_days = {
