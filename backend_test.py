@@ -689,39 +689,87 @@ class IronParadiseGymAPITester:
 
     def run_all_tests(self):
         """Run all API tests"""
-        print("🏋️ Starting Gym Membership API Tests")
-        print("=" * 50)
+        print("🏋️ Starting Iron Paradise Gym Management API Tests")
+        print("=" * 60)
         
-        # Test sequence
+        # Test sequence - Authentication first, then other features
+        print("🔐 AUTHENTICATION & AUTHORIZATION TESTS")
+        print("-" * 40)
         self.test_root_endpoint()
+        self.test_authentication_login()
+        self.test_jwt_token_validation()
+        self.test_unauthorized_access()
+        self.test_user_management()
+        self.test_role_based_access_control()
+        
+        print("\n💳 PAYMENT GATEWAY TESTS")
+        print("-" * 40)
+        self.test_payment_gateways_initialization()
+        self.test_razorpay_integration()
+        self.test_razorpay_key_endpoint()
+        
+        print("\n🧾 RECEIPT TEMPLATE SYSTEM TESTS")
+        print("-" * 40)
+        self.test_receipt_templates_system()
+        self.test_receipt_template_crud()
+        
+        print("\n👥 MEMBER MANAGEMENT TESTS")
+        print("-" * 40)
         self.test_create_member()
         self.test_get_members()
         self.test_get_specific_member()
         self.test_update_member()
+        self.test_membership_pricing()
+        
+        print("\n💰 PAYMENT MANAGEMENT TESTS")
+        print("-" * 40)
         self.test_record_payment()
         self.test_get_all_payments()
         self.test_get_member_payments()
+        self.test_receipt_generation()
+        
+        print("\n📊 DASHBOARD & ANALYTICS TESTS")
+        print("-" * 40)
         self.test_dashboard_stats()
         self.test_expiring_members()
-        self.test_membership_pricing()
+        
+        print("\n🛡️ ERROR HANDLING & SECURITY TESTS")
+        print("-" * 40)
+        self.test_error_handling()
         
         # Print summary
-        print("=" * 50)
+        print("=" * 60)
         print(f"📊 Test Summary: {self.tests_passed}/{self.tests_run} tests passed")
         
         if self.tests_passed == self.tests_run:
-            print("🎉 All tests passed!")
+            print("🎉 All tests passed! Iron Paradise Gym API is working correctly.")
             return 0
         else:
             print("❌ Some tests failed!")
             failed_tests = [test for test in self.test_results if not test['success']]
-            print("\nFailed tests:")
+            print(f"\n❌ Failed tests ({len(failed_tests)}):")
             for test in failed_tests:
                 print(f"  - {test['test_name']}: {test['details']}")
+            
+            # Categorize failures
+            critical_failures = []
+            minor_failures = []
+            
+            for test in failed_tests:
+                if any(keyword in test['test_name'].lower() for keyword in ['authentication', 'login', 'payment gateway', 'receipt']):
+                    critical_failures.append(test)
+                else:
+                    minor_failures.append(test)
+            
+            if critical_failures:
+                print(f"\n🚨 Critical failures ({len(critical_failures)}) - These need immediate attention:")
+                for test in critical_failures:
+                    print(f"  - {test['test_name']}")
+            
             return 1
 
 def main():
-    tester = GymMembershipAPITester()
+    tester = IronParadiseGymAPITester()
     return tester.run_all_tests()
 
 if __name__ == "__main__":
