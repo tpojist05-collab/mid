@@ -108,6 +108,16 @@ const MemberManagement = () => {
     setIsEditModalOpen(true);
   };
 
+  const sendReminderToMember = async (member) => {
+    try {
+      await apiClient.post(`/reminders/send/${member.id}`);
+      toast.success(`Reminder sent to ${member.name}`);
+    } catch (error) {
+      console.error('Error sending reminder:', error);
+      toast.error('Failed to send reminder');
+    }
+  };
+
   const getMembershipLabel = (type) => {
     const labels = {
       monthly: 'Monthly',
