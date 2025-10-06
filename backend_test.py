@@ -408,7 +408,7 @@ class IronParadiseGymAPITester:
         
         if success:
             if response.get('name') == "Rajesh Kumar Updated" and response.get('membership_type') == "quarterly":
-                expected_total = 7000.0  # 5500 + 1500 admission fee
+                expected_total = 5500.0  # Quarterly fee only (no admission fee configured)
                 actual_total = response.get('total_amount_due', 0)
                 if actual_total == expected_total:
                     self.log_test("Update Member", True, "Member updated successfully with correct pricing")
