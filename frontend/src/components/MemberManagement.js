@@ -452,7 +452,7 @@ const MemberManagement = () => {
 
       {/* Edit Member Modal */}
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto z-50">
           <DialogHeader>
             <DialogTitle>Edit Member: {selectedMember?.name}</DialogTitle>
           </DialogHeader>
