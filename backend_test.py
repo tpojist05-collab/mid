@@ -189,7 +189,7 @@ class IronParadiseGymAPITester:
                     "description": "Payment gateway test"
                 }
                 
-                order_success, order_response = self.make_request('POST', 'razorpay/create-order', order_data)
+                order_success, order_response = self.make_request('POST', 'razorpay/create-order', order_data, auth_required=True)
                 
                 if order_success:
                     self.log_test("Payment Gateways Initialization", True, 
