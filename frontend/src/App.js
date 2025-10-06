@@ -6,6 +6,7 @@ import Dashboard from "./components/Dashboard";
 import MemberManagement from "./components/MemberManagement";
 import PaymentManagement from "./components/PaymentManagement";
 import ReminderManagement from "./components/ReminderManagement";
+import EarningsManagement from "./components/EarningsManagement";
 import SettingsManagement from "./components/SettingsManagement";
 import UserManagement from "./components/UserManagement";
 import ReceiptManagement from "./components/ReceiptManagement";
