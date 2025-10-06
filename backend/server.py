@@ -1487,17 +1487,26 @@ async def get_razorpay_key():
     """Get Razorpay public key for frontend"""
     return {"key_id": os.environ['RAZORPAY_KEY_ID']}
 
-# Reminder Service Routes
+# Enhanced Reminder Management
 @api_router.post("/reminders/send/{member_id}")
-async def send_manual_reminder(member_id: str):
-    """Send manual reminder to a specific member"""
+async def send_reminder_to_member(
+    member_id: str,
+    current_user: User = Depends(get_current_active_user)
+):
     try:
-        service = get_reminder_service()
-        if not service:
-            raise HTTPException(status_code=500, detail="Reminder service not initialized")
+        if not reminder_service_instance:
+            raise HTTPException(status_code=503, detail="Reminder service not available")
         
-        result = await service.send_manual_reminder(member_id)
+        result = await reminder_service_instance.send_manual_reminder(member_id)
+        
         if result["success"]:
+            # Send notification about manual reminder
+            member = await db.members.find_one({"id": member_id})
+            await send_system_notification(
+                "Manual reminder sent",
+                f"WhatsApp reminder sent to {member['name'] if member else 'member'} by {current_user.full_name}",
+                "info"
+            )
             return {"message": result["message"]}
         else:
             raise HTTPException(status_code=400, detail=result["error"])
@@ -1505,22 +1514,125 @@ async def send_manual_reminder(member_id: str):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error sending manual reminder: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/reminders/send-bulk")
+async def send_bulk_reminders(
+    days_before_expiry: int,
+    current_user: User = Depends(require_admin_role)
+):
+    """Send WhatsApp reminders to all members expiring in X days (admin only)"""
+    try:
+        if not reminder_service_instance:
+            raise HTTPException(status_code=503, detail="Reminder service not available")
+        
+        # Get members expiring in specified days
+        target_date = datetime.now(timezone.utc) + timedelta(days=days_before_expiry)
+        start_of_day = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_of_day = target_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
+        members = await db.members.find({
+            "membership_end": {
+                "$gte": start_of_day.isoformat(),
+                "$lte": end_of_day.isoformat()
+            },
+            "current_payment_status": {"$in": ["paid", "pending"]}
+        }).to_list(100)
+        
+        sent_count = 0
+        failed_count = 0
+        
+        for member in members:
+            result = await reminder_service_instance.send_manual_reminder(member['id'])
+            if result["success"]:
+                sent_count += 1
+            else:
+                failed_count += 1
+        
+        # Send notification
+        await send_system_notification(
+            f"Bulk reminders sent",
+            f"Sent {sent_count} WhatsApp reminders for members expiring in {days_before_expiry} days. {failed_count} failed. Initiated by {current_user.full_name}",
+            "info"
+        )
+        
+        return {
+            "message": f"Bulk reminders completed",
+            "sent": sent_count,
+            "failed": failed_count,
+            "total_members": len(members)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/reminders/history")
-async def get_reminder_history(member_id: str = None):
-    """Get reminder history"""
+async def get_reminder_history(current_user: User = Depends(get_current_active_user)):
     try:
-        service = get_reminder_service()
-        if not service:
-            raise HTTPException(status_code=500, detail="Reminder service not initialized")
+        if not reminder_service_instance:
+            raise HTTPException(status_code=503, detail="Reminder service not available")
         
-        history = await service.get_reminder_history(member_id)
-        return {"reminders": history}
+        history = await reminder_service_instance.get_reminder_history()
+        return history
         
     except Exception as e:
-        logger.error(f"Error getting reminder history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/reminders/history/{member_id}")
+async def get_member_reminder_history(
+    member_id: str,
+    current_user: User = Depends(get_current_active_user)
+):
+    try:
+        if not reminder_service_instance:
+            raise HTTPException(status_code=503, detail="Reminder service not available")
+        
+        history = await reminder_service_instance.get_reminder_history(member_id)
+        return history
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/reminders/expiring-members")
+async def get_expiring_members(
+    days: int = 7,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get list of members whose membership expires in X days"""
+    try:
+        target_date = datetime.now(timezone.utc) + timedelta(days=days)
+        start_of_day = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_of_day = target_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
+        members = await db.members.find({
+            "membership_end": {
+                "$gte": start_of_day.isoformat(),
+                "$lte": end_of_day.isoformat()
+            },
+            "current_payment_status": {"$in": ["paid", "pending"]}
+        }).to_list(100)
+        
+        # Check reminder status for each member
+        for member in members:
+            # Check if reminder was already sent today
+            today = datetime.now(timezone.utc).date()
+            reminder_sent = await db.reminder_logs.find_one({
+                "member_id": member["id"],
+                "days_before_expiry": days,
+                "sent_date": today.isoformat()
+            })
+            member["reminder_sent_today"] = reminder_sent is not None
+        
+        return {
+            "expiring_members": members,
+            "count": len(members),
+            "days_until_expiry": days,
+            "target_date": target_date.strftime("%Y-%m-%d")
+        }
+        
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/reminders/test")
