@@ -1188,8 +1188,16 @@ async def get_gym_settings():
                     "quarterly": {"price": 5500, "duration_days": 90, "name": "Quarterly Plan"},
                     "six_monthly": {"price": 10500, "duration_days": 180, "name": "Six Monthly Plan"}
                 },
+                gym_name="Iron Paradise Gym",
+                gym_address="123 Fitness Street, Gym City",
+                gym_phone="+917099197780",
+                gym_email="admin@ironparadise.com",
                 terms_conditions="Welcome to Iron Paradise Gym. Please follow all gym rules and regulations."
             )
+            # Add admission fee to settings
+            settings_dict = prepare_for_mongo(default_settings.dict())
+            settings_dict['admission_fee'] = 1500.0  # Default admission fee, admin can change
+            await db.gym_settings.insert_one(settings_dict)
             settings_dict = prepare_for_mongo(default_settings.dict())
             await db.gym_settings.insert_one(settings_dict)
             return default_settings
