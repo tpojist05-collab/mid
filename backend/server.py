@@ -856,12 +856,28 @@ async def startup_event():
     """Initialize services on startup"""
     global reminder_service_instance
     try:
+        # Create default admin user if no users exist
+        user_count = await db.users.count_documents({})
+        if user_count == 0:
+            admin_user = User(
+                username="admin",
+                email="admin@ironparadisegym.com",
+                full_name="Administrator",
+                role=UserRole.ADMIN
+            )
+            
+            user_dict = prepare_for_mongo(admin_user.dict())
+            user_dict['hashed_password'] = get_password_hash("admin123")
+            
+            await db.users.insert_one(user_dict)
+            logger.info("Default admin user created: username='admin', password='admin123'")
+        
         # Initialize reminder service
         reminder_service_instance = init_reminder_service(client, os.environ['DB_NAME'])
         reminder_service_instance.start()
         logger.info("Reminder service started successfully")
     except Exception as e:
-        logger.error(f"Failed to start reminder service: {e}")
+        logger.error(f"Failed to start services: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
