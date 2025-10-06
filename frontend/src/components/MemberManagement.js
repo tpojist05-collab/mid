@@ -11,6 +11,7 @@ import { apiClient } from '../App';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import MemberForm from './forms/MemberForm';
+import MemberStartDateManager from './MemberStartDateManager';
 
 const MemberManagement = () => {
   const [members, setMembers] = useState([]);
