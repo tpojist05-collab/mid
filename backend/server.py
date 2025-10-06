@@ -943,6 +943,68 @@ async def update_member(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.put("/members/{member_id}/start-date")
+async def update_member_start_date(
+    member_id: str,
+    date_data: dict,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Update member's gym start date (supports backdating)"""
+    try:
+        existing_member = await db.members.find_one({"id": member_id})
+        if not existing_member:
+            raise HTTPException(status_code=404, detail="Member not found")
+        
+        new_start_date = date_data.get("start_date")
+        if not new_start_date:
+            raise HTTPException(status_code=400, detail="Start date is required")
+        
+        # Parse the new start date
+        if isinstance(new_start_date, str):
+            try:
+                new_start_date = datetime.fromisoformat(new_start_date.replace('Z', '+00:00'))
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid date format")
+        
+        # Get membership type
+        membership_type = MembershipType(existing_member.get('membership_type', 'MONTHLY'))
+        
+        # Calculate new membership end date
+        new_end_date = calculate_membership_end_date(new_start_date, membership_type)
+        
+        # Update member record
+        update_data = {
+            'join_date': new_start_date.isoformat(),
+            'membership_start': new_start_date.isoformat(),
+            'membership_end': new_end_date.isoformat(),
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.members.update_one(
+            {"id": member_id},
+            {"$set": update_data}
+        )
+        
+        # Send notification
+        await send_system_notification(
+            f"Member start date updated",
+            f"'{existing_member.get('name')}' start date changed to {new_start_date.strftime('%Y-%m-%d')} by {current_user.full_name}",
+            "info"
+        )
+        
+        return {
+            "message": "Member start date updated successfully",
+            "member_id": member_id,
+            "old_start_date": existing_member.get('join_date'),
+            "new_start_date": new_start_date.isoformat(),
+            "new_end_date": new_end_date.isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.delete("/members/{member_id}")
 async def delete_member(member_id: str, current_user: User = Depends(get_current_active_user)):
     try:
