@@ -1241,6 +1241,102 @@ async def get_all_payments():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Monthly Earnings Routes
+@api_router.get("/earnings/monthly", response_model=List[MonthlyEarnings])
+async def get_monthly_earnings(
+    year: Optional[int] = None,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get monthly earnings data, optionally filtered by year"""
+    try:
+        query = {}
+        if year:
+            query["year"] = year
+        
+        earnings = await db.monthly_earnings.find(query).sort([("year", -1), ("month", -1)]).to_list(1000)
+        return [MonthlyEarnings(**parse_from_mongo(earning)) for earning in earnings]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/earnings/monthly/{year}/{month}", response_model=MonthlyEarnings)
+async def get_monthly_earning_detail(
+    year: int,
+    month: int,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get detailed monthly earnings for a specific month"""
+    try:
+        earning = await db.monthly_earnings.find_one({"year": year, "month": month})
+        if not earning:
+            # Return empty earnings record if no data found
+            month_names = ["", "January", "February", "March", "April", "May", "June",
+                          "July", "August", "September", "October", "November", "December"]
+            return MonthlyEarnings(
+                year=year,
+                month=month,
+                month_name=month_names[month] if 1 <= month <= 12 else "Unknown"
+            )
+        return MonthlyEarnings(**parse_from_mongo(earning))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/earnings/summary")
+async def get_earnings_summary(current_user: User = Depends(get_current_active_user)):
+    """Get earnings summary with totals and trends"""
+    try:
+        # Get current year earnings
+        current_year = datetime.now(timezone.utc).year
+        yearly_earnings = await db.monthly_earnings.find({"year": current_year}).to_list(1000)
+        
+        # Calculate totals
+        total_yearly = sum(earning.get("total_earnings", 0) for earning in yearly_earnings)
+        total_cash = sum(earning.get("cash_earnings", 0) for earning in yearly_earnings)
+        total_upi = sum(earning.get("upi_earnings", 0) for earning in yearly_earnings)
+        total_card = sum(earning.get("card_earnings", 0) for earning in yearly_earnings)
+        total_online = sum(earning.get("online_earnings", 0) for earning in yearly_earnings)
+        
+        # Get current month earnings
+        current_month = datetime.now(timezone.utc).month
+        current_month_earning = await db.monthly_earnings.find_one({
+            "year": current_year,
+            "month": current_month
+        })
+        
+        current_month_total = current_month_earning.get("total_earnings", 0) if current_month_earning else 0
+        
+        # Get previous month for comparison
+        prev_month = current_month - 1 if current_month > 1 else 12
+        prev_year = current_year if current_month > 1 else current_year - 1
+        
+        prev_month_earning = await db.monthly_earnings.find_one({
+            "year": prev_year,
+            "month": prev_month
+        })
+        
+        prev_month_total = prev_month_earning.get("total_earnings", 0) if prev_month_earning else 0
+        
+        # Calculate growth percentage
+        growth_percentage = 0
+        if prev_month_total > 0:
+            growth_percentage = ((current_month_total - prev_month_total) / prev_month_total) * 100
+        
+        return {
+            "current_year": current_year,
+            "yearly_total": total_yearly,
+            "current_month_total": current_month_total,
+            "previous_month_total": prev_month_total,
+            "growth_percentage": round(growth_percentage, 2),
+            "payment_method_breakdown": {
+                "cash": total_cash,
+                "upi": total_upi,
+                "card": total_card,
+                "online": total_online
+            },
+            "monthly_data": [MonthlyEarnings(**parse_from_mongo(earning)) for earning in yearly_earnings]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Dashboard Stats Route
 @api_router.get("/dashboard/stats")
 async def get_dashboard_stats():
