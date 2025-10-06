@@ -26,6 +26,12 @@ const SettingsManagement = () => {
     admission_fee: 0
   });
 
+  const [admissionFeeData, setAdmissionFeeData] = useState({
+    amount: 1500,
+    loading: false,
+    saving: false
+  });
+
   useEffect(() => {
     fetchSettings();
   }, []);
