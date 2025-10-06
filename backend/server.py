@@ -780,26 +780,27 @@ async def get_permissions(current_user: User = Depends(require_permission("roles
 @api_router.post("/members", response_model=Member)
 async def create_member(member_data: MemberCreate, current_user: User = Depends(get_current_active_user)):
     try:
-        # Get gym settings for admission fee
-        gym_settings = await db.gym_settings.find_one()
-        admission_fee = gym_settings.get('admission_fee', 0) if gym_settings else 0
-        
-        # Set join date if not provided
+        # Set join date if not provided (can be backdate)
         join_date = member_data.join_date or datetime.now(timezone.utc)
         
-        # Calculate membership details
-        monthly_fee = calculate_membership_fee(member_data.membership_type)
+        # Calculate membership fee
+        membership_fee = await calculate_membership_fee(member_data.membership_type)
         membership_end = calculate_membership_end_date(join_date, member_data.membership_type)
         
-        # Calculate total amount due (admission fee + membership fee)
-        total_due = admission_fee + monthly_fee
+        # Apply admission fee ONLY for monthly memberships
+        admission_fee = 0.0
+        if member_data.membership_type == MembershipType.MONTHLY:
+            admission_fee = await get_admission_fee()
+        
+        # Calculate total amount due
+        total_due = admission_fee + membership_fee
         
         member = Member(
             **member_data.dict(exclude={'join_date'}),
             join_date=join_date,
             membership_start=join_date,
             membership_end=membership_end,
-            monthly_fee_amount=monthly_fee,
+            monthly_fee_amount=membership_fee,
             admission_fee_amount=admission_fee,
             total_amount_due=total_due
         )
@@ -807,6 +808,14 @@ async def create_member(member_data: MemberCreate, current_user: User = Depends(
         # Prepare for MongoDB storage
         member_dict = prepare_for_mongo(member.dict())
         await db.members.insert_one(member_dict)
+        
+        # Send notification
+        await send_system_notification(
+            f"New member '{member.name}' added",
+            f"Membership: {member_data.membership_type.value} | Start: {join_date.strftime('%Y-%m-%d')} | Total: ₹{total_due}" + 
+            (f" (includes ₹{admission_fee} admission fee)" if admission_fee > 0 else ""),
+            "info"
+        )
         
         return member
     except Exception as e:
