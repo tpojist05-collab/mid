@@ -68,9 +68,14 @@ class PaymentStatus(str, Enum):
 
 class PaymentMethod(str, Enum):
     CASH = "cash"
-    CARD = "card"
     UPI = "upi"
+    CARD = "card"
+    NET_BANKING = "net_banking"
     RAZORPAY = "razorpay"
+    PAYU = "payu"
+    GOOGLE_PAY = "google_pay"
+    PAYTM = "paytm"
+    PHONEPE = "phonepe"
 
 class UserRole(str, Enum):
     ADMIN = "admin"
