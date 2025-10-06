@@ -37,6 +37,9 @@ app = FastAPI(title="Gym Membership Tracker")
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Initialize reminder service
+reminder_service_instance = None
+
 # Enums
 class MembershipType(str, Enum):
     MONTHLY = "monthly"
