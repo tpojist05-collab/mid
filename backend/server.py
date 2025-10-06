@@ -175,7 +175,8 @@ class UserCreate(BaseModel):
     email: EmailStr
     full_name: str
     password: str
-    role: UserRole = UserRole.STAFF
+    role: UserRole = UserRole.RECEPTIONIST
+    custom_role_id: Optional[str] = None
 
 class UserLogin(BaseModel):
     username: str
