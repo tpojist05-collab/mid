@@ -1202,6 +1202,9 @@ async def record_payment(payment_data: PaymentCreate):
         payment_dict = prepare_for_mongo(payment.dict())
         await db.payments.insert_one(payment_dict)
         
+        # Update monthly earnings
+        await update_monthly_earnings(payment_dict)
+        
         # Update member payment status
         await db.members.update_one(
             {"id": payment_data.member_id},
@@ -1209,6 +1212,13 @@ async def record_payment(payment_data: PaymentCreate):
                 "current_payment_status": PaymentStatus.PAID.value,
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }}
+        )
+        
+        # Send notification
+        await send_system_notification(
+            f"Payment recorded: ₹{payment.amount}",
+            f"Payment of ₹{payment.amount} recorded for {member['name']} via {payment.method.upper()}",
+            "info"
         )
         
         return payment
