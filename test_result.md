@@ -345,14 +345,15 @@
 
 ## test_plan:
   current_focus:
-    - "NEW FEATURES TESTING COMPLETE - Admission Fee & Backdating"
-    - "Backend Testing Complete with New Features"
+    - "NEW FEATURES TESTING COMPLETE - WhatsApp Reminders & Earnings Tracking"
+    - "Backend Testing Complete with All New Features"
     - "Frontend Integration Testing"
   stuck_tasks: 
     - "Razorpay Order Creation (Authentication Issues)"
     - "Receipt Template Listing (MongoDB ObjectId Serialization)"
+    - "Reminder History (MongoDB ObjectId Serialization)"
   test_all: true
-  test_priority: "new_features_complete"
+  test_priority: "all_new_features_complete"
 
 ## agent_communication:
     - agent: "main"
