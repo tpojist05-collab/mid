@@ -19,6 +19,8 @@ const MemberManagement = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('all'); // 'all', 'active', 'inactive'
+  const { user, isAdmin } = useAuth();
 
   // Form state
   const [formData, setFormData] = useState({
