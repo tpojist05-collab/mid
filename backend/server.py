@@ -12,6 +12,10 @@ from datetime import datetime, timezone, timedelta
 from enum import Enum
 import razorpay
 from reminder_service import init_reminder_service, get_reminder_service
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import Depends, HTTPException, status
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
