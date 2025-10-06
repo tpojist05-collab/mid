@@ -296,6 +296,7 @@ class PaymentSummary(BaseModel):
     upi_count: int
     card_count: int
     online_count: int
+
 class SystemNotification(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
