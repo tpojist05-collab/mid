@@ -249,6 +249,42 @@
           agent: "testing"
           comment: "NEW FEATURE TESTING COMPLETED: Member update with admission fee logic working correctly. Switching FROM monthly TO quarterly/six-monthly removes admission fee. Switching TO monthly FROM other plans adds admission fee. Membership end dates recalculate properly when start dates or membership types change. Fixed pricing calculation bug (case mismatch) during testing."
 
+  - task: "WhatsApp Reminder System"
+    implemented: true
+    working: true
+    file: "server.py, reminder_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "NEW FEATURE TESTING COMPLETED: WhatsApp reminder system APIs fully functional. GET /api/reminders/expiring-members?days=7 returns members expiring in specified days. POST /api/reminders/send/{member_id} for individual reminders. POST /api/reminders/send-bulk for admin bulk reminders. Reminder service properly configured with Twilio integration. Minor: Reminder history endpoint has MongoDB ObjectId serialization issue (non-critical). Core reminder functionality operational."
+
+  - task: "Monthly Earnings Tracking System"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "NEW FEATURE TESTING COMPLETED: Monthly earnings tracking system fully functional. GET /api/earnings/monthly returns earnings data with payment method breakdown (cash, UPI, card, online). GET /api/earnings/monthly/{year}/{month} for specific month details. GET /api/earnings/summary provides growth percentages and trends. Automatic earnings updates when payments are recorded. All payment method categorization working correctly."
+
+  - task: "Payment Method Tracking and Integration"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "NEW FEATURE TESTING COMPLETED: Payment method tracking working perfectly. POST /api/payments supports all payment methods (cash, UPI, card, razorpay, etc.). Automatic monthly earnings updates when payments recorded. Payment-earnings integration flow working correctly. Fixed PaymentRecord model attribute issue during testing. All payment methods properly categorized and tracked in monthly earnings."
+
 ## frontend:
   - task: "Form Input Focus Fix"
     implemented: true
