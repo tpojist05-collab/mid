@@ -86,31 +86,42 @@ class IronParadiseGymAPITester:
 
     def test_authentication_login(self):
         """Test authentication with test credentials"""
-        login_data = {
+        # OAuth2PasswordRequestForm expects form data, not JSON
+        url = f"{self.api_url}/auth/login"
+        form_data = {
             "username": "test_admin",
             "password": "TestPass123!"
         }
         
-        # Use form data for OAuth2PasswordRequestForm
-        success, response = self.make_request('POST', 'auth/login', login_data)
-        
-        if success:
-            required_fields = ['access_token', 'token_type', 'user']
-            missing_fields = [field for field in required_fields if field not in response]
+        try:
+            response = requests.post(url, data=form_data, timeout=10)
+            success = response.status_code == 200
             
-            if not missing_fields:
-                self.auth_token = response['access_token']
-                self.admin_user = response['user']
-                user_role = self.admin_user.get('role')
+            try:
+                response_data = response.json()
+            except:
+                response_data = {"status_code": response.status_code, "text": response.text}
+            
+            if success:
+                required_fields = ['access_token', 'token_type', 'user']
+                missing_fields = [field for field in required_fields if field not in response_data]
                 
-                if user_role == 'admin':
-                    self.log_test("Authentication Login", True, f"Successfully logged in as admin: {self.admin_user.get('username')}")
+                if not missing_fields:
+                    self.auth_token = response_data['access_token']
+                    self.admin_user = response_data['user']
+                    user_role = self.admin_user.get('role')
+                    
+                    if user_role == 'admin':
+                        self.log_test("Authentication Login", True, f"Successfully logged in as admin: {self.admin_user.get('username')}")
+                    else:
+                        self.log_test("Authentication Login", False, f"Expected admin role, got: {user_role}")
                 else:
-                    self.log_test("Authentication Login", False, f"Expected admin role, got: {user_role}")
+                    self.log_test("Authentication Login", False, f"Missing required fields: {missing_fields}", response_data)
             else:
-                self.log_test("Authentication Login", False, f"Missing required fields: {missing_fields}", response)
-        else:
-            self.log_test("Authentication Login", False, "Failed to authenticate with test credentials", response)
+                self.log_test("Authentication Login", False, "Failed to authenticate with test credentials", response_data)
+                
+        except requests.exceptions.RequestException as e:
+            self.log_test("Authentication Login", False, f"Request failed: {str(e)}")
 
     def test_jwt_token_validation(self):
         """Test JWT token validation"""
