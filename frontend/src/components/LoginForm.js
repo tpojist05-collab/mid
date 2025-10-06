@@ -26,16 +26,7 @@ const LoginForm = () => {
     }
   };
 
-  const handleDemoLogin = async () => {
-    setLoading(true);
-    try {
-      await login('admin', 'admin123');
-    } catch (error) {
-      console.error('Demo login error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Demo login removed for security
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
