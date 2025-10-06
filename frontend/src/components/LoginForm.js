@@ -92,25 +92,12 @@ const LoginForm = () => {
           </form>
 
           <div className="mt-6 pt-4 border-t">
-            <div className="text-center mb-3">
-              <p className="text-sm text-slate-600">Demo Access</p>
-            </div>
-            <Button 
-              onClick={handleDemoLogin}
-              variant="outline"
-              className="w-full"
-              disabled={loading}
-              data-testid="demo-login"
-            >
-              🚀 Try Demo (Admin Access)
-            </Button>
-          </div>
-
-          <div className="mt-4 text-center">
-            <div className="text-xs text-slate-500 space-y-1">
-              <p><strong>Demo Credentials:</strong></p>
-              <p>Username: <code>admin</code></p>
-              <p>Password: <code>admin123</code></p>
+            <div className="text-center">
+              <div className="text-xs text-slate-500 space-y-1">
+                <p><strong>Secure Login Required</strong></p>
+                <p>Contact administrator for account access</p>
+                <p>🔐 No demo access available</p>
+              </div>
             </div>
           </div>
         </CardContent>
