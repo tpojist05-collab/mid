@@ -429,7 +429,7 @@ class IronParadiseGymAPITester:
             "member_id": self.created_member_id,
             "amount": 2000.0,
             "payment_method": "upi",
-            "description": "Monthly membership fee + admission fee",
+            "description": "Monthly membership fee",
             "transaction_id": "UPI_TXN_001_RAJESH"
         }
         
