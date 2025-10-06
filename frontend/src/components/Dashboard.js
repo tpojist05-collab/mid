@@ -222,7 +222,16 @@ const Dashboard = () => {
             <Button 
               className="btn-animate bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-6 rounded-xl"
               data-testid="record-payment-btn"
-              onClick={() => window.dispatchEvent(new CustomEvent('openPaymentModal'))}
+              onClick={() => {
+                // Navigate to payments page and trigger add modal
+                if (window.setCurrentPage) {
+                  window.setCurrentPage('payments');
+                  setTimeout(() => {
+                    const event = new CustomEvent('openPaymentModal');
+                    window.dispatchEvent(event);
+                  }, 100);
+                }
+              }}
             >
               <div className="text-center">
                 <div className="text-2xl mb-2">💳</div>
