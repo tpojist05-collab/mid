@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from './ui/textarea';
 import { apiClient } from '../App';
 import { toast } from 'sonner';
+import RazorpayPayment from './RazorpayPayment';
 
 const PaymentManagement = () => {
   const [payments, setPayments] = useState([]);
