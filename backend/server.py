@@ -161,8 +161,12 @@ class User(BaseModel):
     username: str
     email: EmailStr
     full_name: str
-    role: UserRole = UserRole.STAFF
+    role: UserRole = UserRole.RECEPTIONIST
+    custom_role_id: Optional[str] = None  # For custom roles
+    permissions: List[str] = Field(default_factory=list)  # Cached permissions
     is_active: bool = True
+    created_by: Optional[str] = None
+    last_login: Optional[datetime] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
