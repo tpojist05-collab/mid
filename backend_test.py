@@ -344,27 +344,27 @@ class IronParadiseGymAPITester:
 
     def test_update_member(self):
         """Test updating a member"""
-        if not self.created_member_id:
-            self.log_test("Update Member", False, "No member ID available for testing")
+        if not self.created_member_id or not self.auth_token:
+            self.log_test("Update Member", False, "No member ID or auth token available for testing")
             return
             
         update_data = {
-            "name": "Updated Test Member",
-            "email": "updated@example.com",
+            "name": "Rajesh Kumar Updated",
+            "email": "rajesh.updated@example.com",
             "phone": "+91 9876543210",
-            "address": "456 Updated Street, Updated City, Updated State 654321",
+            "address": "456 Brigade Road, Bangalore, Karnataka 560025",
             "emergency_contact": {
-                "name": "Updated Emergency Contact",
+                "name": "Priya Kumar",
                 "phone": "+91 9876543211",
-                "relationship": "Parent"
+                "relationship": "Spouse"
             },
             "membership_type": "quarterly"
         }
         
-        success, response = self.make_request('PUT', f'members/{self.created_member_id}', update_data)
+        success, response = self.make_request('PUT', f'members/{self.created_member_id}', update_data, auth_required=True)
         
         if success:
-            if response.get('name') == "Updated Test Member" and response.get('membership_type') == "quarterly":
+            if response.get('name') == "Rajesh Kumar Updated" and response.get('membership_type') == "quarterly":
                 expected_total = 7000.0  # 5500 + 1500 admission fee
                 actual_total = response.get('total_amount_due', 0)
                 if actual_total == expected_total:
