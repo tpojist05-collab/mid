@@ -17,13 +17,20 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [statsRes, expiringRes] = await Promise.all([
-        apiClient.get('/dashboard/stats'),
-        apiClient.get('/members/expiring-soon?days=7')
-      ]);
       
+      // Fetch stats (required)
+      const statsRes = await apiClient.get('/dashboard/stats');
       setStats(statsRes.data);
-      setExpiringMembers(expiringRes.data);
+      
+      // Fetch expiring members (optional, handle errors gracefully)
+      try {
+        const expiringRes = await apiClient.get('/members/expiring-soon?days=7');
+        setExpiringMembers(expiringRes.data);
+      } catch (expiringError) {
+        console.warn('Could not load expiring members:', expiringError);
+        setExpiringMembers([]);
+      }
+      
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       toast.error('Failed to load dashboard data');
