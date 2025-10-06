@@ -133,6 +133,10 @@ def parse_from_mongo(item: dict) -> dict:
     for field in datetime_fields:
         if field in item and isinstance(item[field], str):
             item[field] = datetime.fromisoformat(item[field])
+        elif field in item and item[field] is None:
+            # Handle None values by setting a default datetime for required fields
+            if field in ['join_date', 'membership_start', 'membership_end', 'created_at', 'updated_at']:
+                item[field] = datetime.now(timezone.utc)
     return item
 
 # API Routes
