@@ -207,6 +207,51 @@ class SettingsUpdate(BaseModel):
     membership_plans: Optional[dict] = None
     terms_conditions: Optional[str] = None
 
+# Advanced Role & Permission Models
+class Permission(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: str
+    module: str  # members, payments, reminders, settings, etc.
+    actions: List[str]  # read, write, delete, etc.
+
+class CustomRole(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    description: str
+    permissions: List[str]  # List of permission IDs
+    created_by: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class RoleCreate(BaseModel):
+    name: str
+    description: str
+    permissions: List[str]
+
+class RoleUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    permissions: Optional[List[str]] = None
+
+# Payment Gateway Models
+class PaymentGateway(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    provider: str  # razorpay, payu, ccavenue, instamojo
+    is_active: bool = True
+    config: dict = Field(default_factory=dict)
+    supported_methods: List[str] = Field(default_factory=list)
+
+class SystemNotification(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    message: str
+    type: str  # info, warning, error, success
+    user_id: Optional[str] = None  # If None, broadcast to all
+    read: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 # Authentication Helper Functions
 def verify_password(plain_password, stored_hash):
     try:
