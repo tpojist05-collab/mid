@@ -193,6 +193,10 @@ async def update_member(member_id: str, member_update: MemberCreate):
         update_data = member_update.dict()
         update_data['updated_at'] = datetime.now(timezone.utc)
         
+        # Preserve existing join_date if not provided in update
+        if update_data.get('join_date') is None:
+            update_data['join_date'] = existing_member.get('join_date')
+        
         # If membership type changed, recalculate fees
         if update_data['membership_type'] != existing_member['membership_type']:
             monthly_fee = calculate_membership_fee(member_update.membership_type)
