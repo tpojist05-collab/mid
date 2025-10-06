@@ -17,6 +17,8 @@ const PaymentManagement = () => {
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showRazorpay, setShowRazorpay] = useState(false);
+  const [selectedMemberForPayment, setSelectedMemberForPayment] = useState(null);
   
   // Form state
   const [formData, setFormData] = useState({
