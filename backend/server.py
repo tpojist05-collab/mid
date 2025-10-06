@@ -412,14 +412,29 @@ async def update_user_permissions(user_id: str):
         logger.error(f"Error updating user permissions: {e}")
 
 # Helper functions
-def calculate_membership_fee(membership_type: MembershipType) -> float:
+async def calculate_membership_fee(membership_type: MembershipType) -> float:
     """Calculate membership fee based on type"""
-    rates = {
-        MembershipType.MONTHLY: 2000.0,
-        MembershipType.QUARTERLY: 5500.0,  # 3 months with discount
-        MembershipType.SIX_MONTHLY: 10500.0  # 6 months with discount
-    }
-    return rates.get(membership_type, 2000.0)
+    # Get current settings from database
+    settings = await db.gym_settings.find_one({"setting_name": "membership_rates"})
+    if settings and "rates" in settings:
+        rates = settings["rates"]
+    else:
+        # Default rates
+        rates = {
+            "MONTHLY": 2000.0,
+            "QUARTERLY": 5500.0,  # 3 months with discount
+            "SIX_MONTHLY": 10500.0  # 6 months with discount
+        }
+    
+    membership_key = membership_type.value if hasattr(membership_type, 'value') else str(membership_type)
+    return rates.get(membership_key, 2000.0)
+
+async def get_admission_fee() -> float:
+    """Get current admission fee for monthly membership"""
+    settings = await db.gym_settings.find_one({"setting_name": "admission_fee"})
+    if settings and "amount" in settings:
+        return settings["amount"]
+    return 1500.0  # Default admission fee
 
 def calculate_membership_end_date(start_date: datetime, membership_type: MembershipType) -> datetime:
     """Calculate membership end date based on type"""
