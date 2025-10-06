@@ -1329,6 +1329,13 @@ async def startup_event():
         logger.info("🔍 Checking for existing admin users...")
         admin_count = await db.users.count_documents({"role": "admin"})
         logger.info(f"📊 Found {admin_count} admin users")
+        
+        # Log existing admin users for debugging
+        if admin_count > 0:
+            admin_users = await db.users.find({"role": "admin"}).to_list(10)
+            for admin in admin_users:
+                logger.info(f"🔑 Admin user found: {admin.get('username')} ({admin.get('email')})")
+        
         if admin_count == 0:
             # Create secure admin setup
             admin_user = User(
