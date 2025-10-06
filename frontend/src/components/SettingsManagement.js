@@ -212,6 +212,38 @@ const SettingsManagement = () => {
       </Card>
 
       {/* Membership Plans */}
+      {/* Admission Fee Setting */}
+      <Card className="glass border-0">
+        <CardHeader>
+          <CardTitle className="text-slate-800 flex items-center">
+            <span className="mr-2">💰</span>
+            Admission Fee
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+            <div className="space-y-2">
+              <Label htmlFor="admission_fee">One-time Admission Fee (₹)</Label>
+              <Input
+                id="admission_fee"
+                type="number"
+                value={formData.admission_fee}
+                onChange={(e) => setFormData({ ...formData, admission_fee: parseFloat(e.target.value) || 0 })}
+                placeholder="0"
+                data-testid="admission-fee-input"
+              />
+            </div>
+            <div className="text-sm text-slate-600">
+              <strong>Current Admission Fee:</strong> {formatCurrency(formData.admission_fee)}
+            </div>
+          </div>
+          <div className="mt-3 text-xs text-slate-500">
+            This fee is charged once when a member first joins the gym, in addition to their chosen membership plan.
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Membership Plans */}
       <Card className="glass border-0">
         <CardHeader>
           <CardTitle className="text-slate-800 flex items-center">
