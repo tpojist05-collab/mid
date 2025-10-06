@@ -342,66 +342,6 @@ const PaymentManagement = () => {
           />
         </div>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="payment_method">Payment Method</Label>
-          <Select 
-            value={formData.payment_method} 
-            onValueChange={(value) => setFormData({ ...formData, payment_method: value })}
-          >
-            <SelectTrigger data-testid="payment-method-select">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="cash">Cash</SelectItem>
-              <SelectItem value="card">Debit/Credit Card</SelectItem>
-              <SelectItem value="upi">UPI</SelectItem>
-              <SelectItem value="razorpay">Razorpay (Online)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="transaction_id">Transaction ID (Optional)</Label>
-          <Input
-            id="transaction_id"
-            value={formData.transaction_id}
-            onChange={(e) => setFormData({ ...formData, transaction_id: e.target.value })}
-            placeholder="Enter transaction/reference ID"
-            data-testid="transaction-id-input"
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="e.g., Monthly membership fee, Admission fee, etc."
-          required
-          data-testid="payment-description-input"
-        />
-      </div>
-
-      <div className="flex justify-end gap-3 pt-4">
-        <Button 
-          type="button" 
-          variant="outline" 
-          onClick={() => {
-            setIsAddModalOpen(false);
-            resetForm();
-          }}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" data-testid="save-payment-btn">
-          Record Payment
-        </Button>
-      </div>
-    </form>
   );
 
   if (loading) {
