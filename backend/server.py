@@ -69,6 +69,16 @@ class PaymentMethod(str, Enum):
     UPI = "upi"
     RAZORPAY = "razorpay"
 
+class UserRole(str, Enum):
+    ADMIN = "admin"
+    STAFF = "staff"
+
+class MemberStatus(str, Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    SUSPENDED = "suspended"
+    FROZEN = "frozen"
+
 # Models
 class EmergencyContact(BaseModel):
     name: str
