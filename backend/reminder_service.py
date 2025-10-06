@@ -182,6 +182,33 @@ Please renew to continue enjoying our gym facilities.
 Thank you!
 - Iron Paradise Team"""
 
+    async def send_whatsapp(self, phone_number: str, message: str) -> bool:
+        """Send WhatsApp message using Twilio WhatsApp API"""
+        try:
+            # Clean phone number (remove spaces, add country code if needed)
+            clean_phone = phone_number.replace(' ', '').replace('-', '')
+            if not clean_phone.startswith('+'):
+                if clean_phone.startswith('91'):
+                    clean_phone = '+' + clean_phone
+                elif clean_phone.startswith('0'):
+                    clean_phone = '+91' + clean_phone[1:]
+                else:
+                    clean_phone = '+91' + clean_phone
+            
+            # Send WhatsApp message via Twilio
+            message_instance = self.twilio_client.messages.create(
+                body=message,
+                from_=os.environ.get('TWILIO_WHATSAPP_FROM', 'whatsapp:+14155238886'),
+                to=f'whatsapp:{clean_phone}'
+            )
+            
+            logger.info(f"WhatsApp message sent successfully. SID: {message_instance.sid}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to send WhatsApp message to {phone_number}: {e}")
+            return False
+
     async def send_sms(self, phone_number: str, message: str) -> bool:
         """Send SMS using Twilio"""
         try:
