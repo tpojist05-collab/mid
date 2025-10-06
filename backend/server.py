@@ -647,7 +647,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_active_
 @api_router.get("/users", response_model=List[User])
 async def get_all_users(current_user: User = Depends(require_permission("users", "read"))):
     try:
-        users = await db.users.find().to_list(1000)
+        users = await db.users.find().to_list(None)  # No limit on users
         return [User(**parse_from_mongo(user)) for user in users]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
