@@ -1336,6 +1336,27 @@ async def startup_event():
             for admin in admin_users:
                 logger.info(f"🔑 Admin user found: {admin.get('username')} ({admin.get('email')})")
         
+        # Create test admin user for testing purposes
+        test_admin_exists = await db.users.find_one({"username": "test_admin"})
+        if not test_admin_exists:
+            logger.info("🧪 Creating test admin user for testing...")
+            test_admin = User(
+                username="test_admin",
+                email="test@ironparadise.com", 
+                full_name="Test Administrator",
+                role=UserRole.ADMIN
+            )
+            
+            user_dict = prepare_for_mongo(test_admin.dict())
+            user_dict['hashed_password'] = get_password_hash("TestPass123!")
+            
+            await db.users.insert_one(user_dict)
+            await update_user_permissions(test_admin.id)
+            
+            logger.info("🔐 TEST ADMIN CREATED:")
+            logger.info("Username: test_admin")
+            logger.info("Password: TestPass123!")
+        
         if admin_count == 0:
             # Create secure admin setup
             admin_user = User(
