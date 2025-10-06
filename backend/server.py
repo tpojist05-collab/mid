@@ -104,6 +104,25 @@ class PaymentCreate(BaseModel):
     description: str
     transaction_id: Optional[str] = None
 
+class RazorpayOrderCreate(BaseModel):
+    member_id: str
+    amount: float
+    currency: str = "INR"
+    description: str
+
+class RazorpayOrderResponse(BaseModel):
+    order_id: str
+    amount: float
+    currency: str
+    key_id: str
+
+class RazorpayPaymentVerify(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+    member_id: str
+    description: str
+
 # Helper functions
 def calculate_membership_fee(membership_type: MembershipType) -> float:
     """Calculate membership fee based on type"""
