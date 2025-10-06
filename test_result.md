@@ -201,6 +201,54 @@
           agent: "testing"
           comment: "TESTING COMPLETED: Comprehensive error handling implemented. Invalid data properly validated with 422 responses. Non-existent resources return appropriate 404 errors. Authentication failures properly handled. Input validation working across all endpoints."
 
+  - task: "Admission Fee Management System"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "NEW FEATURE TESTING COMPLETED: Admission fee management APIs fully functional. GET /api/settings/admission-fee returns current fee (₹2000) with proper metadata. PUT /api/settings/admission-fee allows admin-only updates. Admission fee correctly applies ONLY to monthly membership plans. Quarterly and six-monthly plans exclude admission fee as designed. Admin authorization working correctly."
+
+  - task: "Member Start Date Backdating System"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "NEW FEATURE TESTING COMPLETED: Member start date backdating fully functional. PUT /api/members/{member_id}/start-date allows backdating member start dates. Membership end date automatically recalculates based on new start date (90 days for quarterly, 30 days for monthly). Date validation handles future dates appropriately. Custom join dates during member creation working correctly."
+
+  - task: "Enhanced Member Creation with Admission Fee Logic"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "NEW FEATURE TESTING COMPLETED: Enhanced member creation with admission fee logic working perfectly. Monthly members: ₹2000 admission fee + ₹2000 monthly fee = ₹4000 total. Quarterly members: ₹5500 (no admission fee). Six-monthly members: ₹10500 (no admission fee). Custom join dates (backdating) supported during creation with proper end date calculation."
+
+  - task: "Member Update with Admission Fee Logic"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "NEW FEATURE TESTING COMPLETED: Member update with admission fee logic working correctly. Switching FROM monthly TO quarterly/six-monthly removes admission fee. Switching TO monthly FROM other plans adds admission fee. Membership end dates recalculate properly when start dates or membership types change. Fixed pricing calculation bug (case mismatch) during testing."
+
 ## frontend:
   - task: "Form Input Focus Fix"
     implemented: true
