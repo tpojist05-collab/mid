@@ -1539,10 +1539,10 @@ async def get_receipt_template(template_id: str, current_user: User = Depends(ge
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/receipts/templates")
-async def create_receipt_template(template_data: dict, current_user: dict = Depends(get_current_user)):
+async def create_receipt_template(template_data: dict, current_user: User = Depends(get_current_active_user)):
     """Create new receipt template"""
     try:
-        if current_user["role"] != "admin":
+        if current_user.role != UserRole.ADMIN:
             raise HTTPException(status_code=403, detail="Admin access required")
         
         template = {
