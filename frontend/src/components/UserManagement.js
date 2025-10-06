@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useAuth } from '../contexts/AuthContext';
 import { apiClient } from '../App';
 import { toast } from 'sonner';
+import UserForm from './forms/UserForm';
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
