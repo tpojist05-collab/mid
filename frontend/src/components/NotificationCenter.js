@@ -53,8 +53,38 @@ const NotificationCenter = () => {
             : notif
         )
       );
+      toast.success('Notification marked as read');
     } catch (error) {
       console.error('Error marking notification as read:', error);
+      toast.error('Failed to mark notification as read');
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await apiClient.patch('/notifications/mark-all-read');
+      setNotifications(prev => 
+        prev.map(notif => ({ ...notif, read: true }))
+      );
+      toast.success('All notifications marked as read');
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      toast.error('Failed to mark all notifications as read');
+    }
+  };
+
+  const clearAllNotifications = async () => {
+    if (!window.confirm('Are you sure you want to clear all notifications? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await apiClient.delete('/notifications/clear-all');
+      setNotifications([]);
+      toast.success('All notifications cleared');
+    } catch (error) {
+      console.error('Error clearing notifications:', error);
+      toast.error('Failed to clear notifications');
     }
   };
 
