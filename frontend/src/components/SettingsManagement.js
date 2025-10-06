@@ -22,7 +22,8 @@ const SettingsManagement = () => {
     gym_email: '',
     gym_logo_url: '',
     terms_conditions: '',
-    membership_plans: {}
+    membership_plans: {},
+    admission_fee: 0
   });
 
   useEffect(() => {
