@@ -180,7 +180,19 @@ const PaymentManagement = () => {
             <DialogHeader>
               <DialogTitle>Record New Payment</DialogTitle>
             </DialogHeader>
-            <PaymentForm />
+            <PaymentForm 
+              formData={formData}
+              setFormData={setFormData}
+              members={members}
+              showRazorpay={showRazorpay}
+              setShowRazorpay={setShowRazorpay}
+              selectedMemberForPayment={selectedMemberForPayment}
+              setSelectedMemberForPayment={setSelectedMemberForPayment}
+              handleManualPaymentSubmit={handleManualPaymentSubmit}
+              isAddModalOpen={isAddModalOpen}
+              setIsAddModalOpen={setIsAddModalOpen}
+              resetForm={resetForm}
+            />
           </DialogContent>
         </Dialog>
       </div>
