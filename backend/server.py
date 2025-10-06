@@ -263,7 +263,7 @@ def verify_password(plain_password, stored_hash):
         # stored_hash format: "salt:hash"
         salt, hash_value = stored_hash.split(':')
         return hash_value == hashlib.sha256((plain_password + salt).encode()).hexdigest()
-    except:
+    except Exception:
         return False
 
 def get_password_hash(password):
