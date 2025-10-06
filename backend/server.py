@@ -1649,6 +1649,59 @@ async def generate_receipt(payment_id: str, template_id: str = None, current_use
 async def generate_receipt_html(payment: dict, member: dict, template: dict) -> str:
     """Generate HTML receipt from template"""
     try:
+        # Format payment date safely
+        payment_date = payment.get('payment_date', datetime.now(timezone.utc))
+        if isinstance(payment_date, str):
+            payment_date = datetime.fromisoformat(payment_date)
+        formatted_date = payment_date.strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Build member info section
+        member_info_section = ""
+        if template['sections']['show_member_info']:
+            member_info_section = f"""
+                <div class="section">
+                    <div class="section-title">Member Information</div>
+                    <div class="info-row">
+                        <span class="info-label">Name:</span>
+                        <span class="info-value">{member.get("name", "N/A")}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email:</span>
+                        <span class="info-value">{member.get("email", "N/A")}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Phone:</span>
+                        <span class="info-value">{member.get("phone", "N/A")}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Member ID:</span>
+                        <span class="info-value">{member.get("id", "N/A")}</span>
+                    </div>
+                </div>
+            """
+        
+        # Build service details section
+        service_details_section = ""
+        if template['sections']['show_service_details']:
+            service_details_section = f"""
+                <div class="section">
+                    <div class="section-title">Service Details</div>
+                    <div class="info-row">
+                        <span class="info-label">Service:</span>
+                        <span class="info-value">{payment.get("description", "Gym Service")}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Amount:</span>
+                        <span class="info-value">₹{payment.get("amount", 0)}</span>
+                    </div>
+                </div>
+            """
+        
+        # Build terms section
+        terms_section = ""
+        if template['sections']['show_terms']:
+            terms_section = f'<div class="terms">{template["footer"]["terms_text"]}</div>'
+        
         html_template = f"""
         <!DOCTYPE html>
         <html>
@@ -1770,49 +1823,17 @@ async def generate_receipt_html(payment: dict, member: dict, template: dict) -> 
                     </div>
                     <div class="info-row">
                         <span class="info-label">Payment Date:</span>
-                        <span class="info-value">{payment.get('date', datetime.now().strftime('%Y-%m-%d %H:%M:%S')}}</span>
+                        <span class="info-value">{formatted_date}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Payment Method:</span>
-                        <span class="info-value">{payment.get('method', 'Online')}</span>
+                        <span class="info-value">{payment.get('payment_method', 'Online')}</span>
                     </div>
                 </div>
                 
-                {"" if not template['sections']['show_member_info'] else f'''
-                <div class="section">
-                    <div class="section-title">Member Information</div>
-                    <div class="info-row">
-                        <span class="info-label">Name:</span>
-                        <span class="info-value">{member.get("name", "N/A")}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Email:</span>
-                        <span class="info-value">{member.get("email", "N/A")}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Phone:</span>
-                        <span class="info-value">{member.get("phone", "N/A")}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Member ID:</span>
-                        <span class="info-value">{member.get("id", "N/A")}</span>
-                    </div>
-                </div>
-                '''}
+                {member_info_section}
                 
-                {"" if not template['sections']['show_service_details'] else f'''
-                <div class="section">
-                    <div class="section-title">Service Details</div>
-                    <div class="info-row">
-                        <span class="info-label">Service:</span>
-                        <span class="info-value">{payment.get("description", "Gym Service")}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="info-label">Amount:</span>
-                        <span class="info-value">₹{payment.get("amount", 0)}</span>
-                    </div>
-                </div>
-                '''}
+                {service_details_section}
                 
                 <div class="amount-total">
                     Total Paid: ₹{payment.get('amount', 0)}
@@ -1820,7 +1841,7 @@ async def generate_receipt_html(payment: dict, member: dict, template: dict) -> 
                 
                 <div class="footer">
                     <div class="thank-you">{template['footer']['thank_you_message']}</div>
-                    {"" if not template['sections']['show_terms'] else f'<div class="terms">{template["footer"]["terms_text"]}</div>'}
+                    {terms_section}
                     <div class="contact-info">{template['footer']['contact_info']}</div>
                 </div>
             </div>
