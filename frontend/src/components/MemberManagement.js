@@ -538,7 +538,17 @@ const MemberManagement = () => {
           <DialogHeader>
             <DialogTitle>Edit Member: {selectedMember?.name}</DialogTitle>
           </DialogHeader>
-          <MemberForm />
+          <MemberForm 
+            formData={formData}
+            setFormData={setFormData}
+            handleSubmit={handleSubmit}
+            selectedMember={selectedMember}
+            isEditModalOpen={isEditModalOpen}
+            setIsEditModalOpen={setIsEditModalOpen}
+            isAddModalOpen={isAddModalOpen}
+            setIsAddModalOpen={setIsAddModalOpen}
+            resetForm={resetForm}
+          />
         </DialogContent>
       </Dialog>
     </div>
