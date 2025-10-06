@@ -174,7 +174,7 @@ Please renew to continue enjoying our gym facilities.
 💳 Renew online or visit our reception.
 
 Thank you!
-- FitTrack Team"""
+- Iron Paradise Team"""
 
     async def send_sms(self, phone_number: str, message: str) -> bool:
         """Send SMS using Twilio"""
