@@ -163,7 +163,7 @@ class ReminderService:
         else:
             urgency = "tomorrow"
         
-        return f"""🏋️ FitTrack Gym Reminder
+        return f"""🏋️ Iron Paradise Gym Reminder
 
 Hi {member['name']},
 
