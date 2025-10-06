@@ -1325,6 +1325,10 @@ async def startup_event():
         await initialize_default_payment_gateways()
         logger.info("✅ Default payment gateways initialized")
         
+        # Initialize receipt templates
+        await initialize_receipt_templates()
+        logger.info("✅ Receipt templates initialized")
+        
         # Create default admin user ONLY if no admin exists
         logger.info("🔍 Checking for existing admin users...")
         admin_count = await db.users.count_documents({"role": "admin"})
@@ -1339,7 +1343,7 @@ async def startup_event():
         # Create test admin user for testing purposes
         test_admin_exists = await db.users.find_one({"username": "test_admin"})
         if not test_admin_exists:
-            logger.info("🧪 Creating test admin user for testing...")
+            logger.info("🧪 Creating test admin user for testing purposes...")
             test_admin = User(
                 username="test_admin",
                 email="test@ironparadise.com", 
