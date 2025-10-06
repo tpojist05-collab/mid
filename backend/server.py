@@ -610,12 +610,24 @@ async def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
         if not user.get('is_active', True):
             raise HTTPException(status_code=400, detail="Inactive user")
         
+        # Update last login time and refresh permissions
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {"last_login": datetime.now(timezone.utc)}}
+        )
+        
+        # Refresh user permissions
+        await update_user_permissions(user["id"])
+        
+        # Get updated user data
+        updated_user = await db.users.find_one({"id": user["id"]})
+        
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             data={"sub": user["username"]}, expires_delta=access_token_expires
         )
         
-        user_data = User(**parse_from_mongo(user))
+        user_data = User(**parse_from_mongo(updated_user))
         return {
             "access_token": access_token,
             "token_type": "bearer",
