@@ -34,7 +34,23 @@ const SettingsManagement = () => {
 
   useEffect(() => {
     fetchSettings();
+    fetchAdmissionFee();
   }, []);
+
+  const fetchAdmissionFee = async () => {
+    try {
+      setAdmissionFeeData(prev => ({ ...prev, loading: true }));
+      const response = await apiClient.get('/settings/admission-fee');
+      setAdmissionFeeData(prev => ({
+        ...prev,
+        amount: response.data.amount,
+        loading: false
+      }));
+    } catch (error) {
+      console.error('Error fetching admission fee:', error);
+      setAdmissionFeeData(prev => ({ ...prev, loading: false }));
+    }
+  };
 
   const fetchSettings = async () => {
     try {
