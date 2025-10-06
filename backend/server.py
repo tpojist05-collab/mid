@@ -1107,6 +1107,61 @@ async def update_gym_settings(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Real-time Notification System
+async def send_system_notification(title: str, message: str, type: str, user_id: str = None):
+    """Send system notification"""
+    try:
+        notification = SystemNotification(
+            title=title,
+            message=message,
+            type=type,
+            user_id=user_id
+        )
+        
+        notification_dict = prepare_for_mongo(notification.dict())
+        await db.notifications.insert_one(notification_dict)
+        
+        # TODO: Send via WebSocket to connected clients
+        logger.info(f"Notification sent: {title}")
+        
+    except Exception as e:
+        logger.error(f"Error sending notification: {e}")
+
+@api_router.get("/notifications", response_model=List[SystemNotification])
+async def get_notifications(
+    current_user: User = Depends(get_current_active_user),
+    limit: int = 50
+):
+    try:
+        # Get notifications for current user or broadcast notifications
+        query = {
+            "$or": [
+                {"user_id": current_user.id},
+                {"user_id": None}  # Broadcast notifications
+            ]
+        }
+        
+        notifications = await db.notifications.find(query).sort("created_at", -1).limit(limit).to_list(limit)
+        return [SystemNotification(**parse_from_mongo(notif)) for notif in notifications]
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.patch("/notifications/{notification_id}/read")
+async def mark_notification_read(
+    notification_id: str,
+    current_user: User = Depends(get_current_active_user)
+):
+    try:
+        await db.notifications.update_one(
+            {"id": notification_id},
+            {"$set": {"read": True}}
+        )
+        return {"message": "Notification marked as read"}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Include the router in the main app
 app.include_router(api_router)
 
