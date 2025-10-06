@@ -475,6 +475,57 @@ async def get_razorpay_key():
     """Get Razorpay public key for frontend"""
     return {"key_id": os.environ['RAZORPAY_KEY_ID']}
 
+# Reminder Service Routes
+@api_router.post("/reminders/send/{member_id}")
+async def send_manual_reminder(member_id: str):
+    """Send manual reminder to a specific member"""
+    try:
+        service = get_reminder_service()
+        if not service:
+            raise HTTPException(status_code=500, detail="Reminder service not initialized")
+        
+        result = await service.send_manual_reminder(member_id)
+        if result["success"]:
+            return {"message": result["message"]}
+        else:
+            raise HTTPException(status_code=400, detail=result["error"])
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending manual reminder: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/reminders/history")
+async def get_reminder_history(member_id: str = None):
+    """Get reminder history"""
+    try:
+        service = get_reminder_service()
+        if not service:
+            raise HTTPException(status_code=500, detail="Reminder service not initialized")
+        
+        history = await service.get_reminder_history(member_id)
+        return {"reminders": history}
+        
+    except Exception as e:
+        logger.error(f"Error getting reminder history: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/reminders/test")
+async def test_reminder_service():
+    """Test the reminder service manually"""
+    try:
+        service = get_reminder_service()
+        if not service:
+            raise HTTPException(status_code=500, detail="Reminder service not initialized")
+        
+        await service.check_and_send_reminders()
+        return {"message": "Reminder check completed successfully"}
+        
+    except Exception as e:
+        logger.error(f"Error testing reminder service: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Include the router in the main app
 app.include_router(api_router)
 
