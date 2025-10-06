@@ -59,8 +59,7 @@ const PaymentManagement = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleManualPaymentSubmit = async () => {
     try {
       const paymentData = {
         ...formData,
