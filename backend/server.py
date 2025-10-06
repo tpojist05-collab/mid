@@ -183,6 +183,33 @@ async def get_members():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Members expiring soon - MUST be before /members/{member_id} route
+@api_router.get("/members/expiring-soon", response_model=List[Member])
+async def get_expiring_members(days: int = 7):
+    try:
+        expiry_date = datetime.now(timezone.utc) + timedelta(days=days)
+        members = await db.members.find({
+            "membership_end": {"$lte": expiry_date.isoformat()}
+        }).to_list(1000)
+        
+        if not members:
+            return []
+            
+        # Parse members carefully
+        parsed_members = []
+        for member in members:
+            try:
+                parsed_member = parse_from_mongo(member)
+                parsed_members.append(Member(**parsed_member))
+            except Exception as member_error:
+                logger.error(f"Error parsing member {member.get('id', 'unknown')}: {member_error}")
+                continue
+                
+        return parsed_members
+    except Exception as e:
+        logger.error(f"Error fetching expiring members: {e}")
+        return []  # Return empty list instead of raising exception
+
 @api_router.get("/members/{member_id}", response_model=Member)
 async def get_member(member_id: str):
     try:
