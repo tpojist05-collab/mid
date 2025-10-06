@@ -268,7 +268,8 @@ async def get_dashboard_stats():
         # Calculate expiring memberships (next 7 days)
         next_week = datetime.now(timezone.utc) + timedelta(days=7)
         expiring_soon = await db.members.count_documents({
-            "membership_end": {"$lte": next_week.isoformat()}
+            "membership_end": {"$lte": next_week.isoformat()},
+            "current_payment_status": {"$ne": "expired"}
         })
         
         # Calculate total revenue this month
