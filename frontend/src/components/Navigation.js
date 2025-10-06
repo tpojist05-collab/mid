@@ -9,9 +9,12 @@ const Navigation = ({ currentPage, setCurrentPage, isAdmin }) => {
     { id: 'reminders', label: 'Reminders', icon: '📱' }
   ];
 
-  // Add settings for admin users
+  // Add admin-only tabs
   if (isAdmin) {
-    navItems.push({ id: 'settings', label: 'Settings', icon: '⚙️' });
+    navItems.push(
+      { id: 'users', label: 'Users', icon: '👤' },
+      { id: 'settings', label: 'Settings', icon: '⚙️' }
+    );
   }
 
   return (
