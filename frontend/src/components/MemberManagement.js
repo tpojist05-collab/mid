@@ -340,6 +340,9 @@ const MemberManagement = () => {
               <SelectItem value="six_monthly">Six Monthly Plan - ₹10,500</SelectItem>
             </SelectContent>
           </Select>
+          <div className="text-xs text-slate-500 mt-1">
+            💡 Admission fee will be added automatically based on gym settings
+          </div>
         </div>
       </div>
 
