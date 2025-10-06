@@ -34,7 +34,7 @@ const AppContent = () => {
   const renderCurrentPage = () => {
     switch(currentPage) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard setCurrentPage={setCurrentPage} />;
       case 'members':
         return <MemberManagement />;
       case 'payments':
@@ -46,7 +46,7 @@ const AppContent = () => {
       case 'settings':
         return <SettingsManagement />;
       default:
-        return <Dashboard />;
+        return <Dashboard setCurrentPage={setCurrentPage} />;
     }
   };
 
