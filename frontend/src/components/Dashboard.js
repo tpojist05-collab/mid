@@ -243,7 +243,14 @@ const Dashboard = ({ setCurrentPage }) => {
             <Button 
               className="btn-animate bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-6 rounded-xl"
               data-testid="send-reminders-btn"
-              onClick={() => toast.info('Reminder system coming soon!')}
+              onClick={() => {
+                // Navigate to reminders page
+                if (setCurrentPage) {
+                  setCurrentPage('reminders');
+                } else {
+                  toast.info('Reminder system available in Reminders tab!');
+                }
+              }}
             >
               <div className="text-center">
                 <div className="text-2xl mb-2">📱</div>
