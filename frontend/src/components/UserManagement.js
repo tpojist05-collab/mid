@@ -197,7 +197,17 @@ const UserManagement = () => {
             <DialogHeader>
               <DialogTitle>Add New User</DialogTitle>
             </DialogHeader>
-            <UserForm />
+            <UserForm 
+              formData={formData}
+              setFormData={setFormData}
+              handleSubmit={handleSubmit}
+              selectedUser={selectedUser}
+              isEditModalOpen={isEditModalOpen}
+              setIsEditModalOpen={setIsEditModalOpen}
+              isAddModalOpen={isAddModalOpen}
+              setIsAddModalOpen={setIsAddModalOpen}
+              resetForm={resetForm}
+            />
           </DialogContent>
         </Dialog>
       </div>
