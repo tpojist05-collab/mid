@@ -867,7 +867,7 @@ async def startup_event():
             )
             
             user_dict = prepare_for_mongo(admin_user.dict())
-            user_dict['hashed_password'] = get_password_hash("admin123")
+            user_dict['hashed_password'] = get_password_hash("admin123"[:72])
             
             await db.users.insert_one(user_dict)
             logger.info("Default admin user created: username='admin', password='admin123'")
