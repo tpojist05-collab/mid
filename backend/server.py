@@ -874,7 +874,11 @@ async def get_member(member_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.put("/members/{member_id}", response_model=Member)
-async def update_member(member_id: str, member_update: MemberCreate):
+async def update_member(
+    member_id: str, 
+    member_update: MemberCreate,
+    current_user: User = Depends(get_current_active_user)
+):
     try:
         existing_member = await db.members.find_one({"id": member_id})
         if not existing_member:
@@ -884,15 +888,39 @@ async def update_member(member_id: str, member_update: MemberCreate):
         update_data = member_update.dict()
         update_data['updated_at'] = datetime.now(timezone.utc)
         
-        # Preserve existing join_date if not provided in update
-        if update_data.get('join_date') is None:
-            update_data['join_date'] = existing_member.get('join_date')
+        # Handle join_date changes (including backdating)
+        new_join_date = member_update.join_date or existing_member.get('join_date')
+        if isinstance(new_join_date, str):
+            new_join_date = datetime.fromisoformat(new_join_date)
         
-        # If membership type changed, recalculate fees
-        if update_data['membership_type'] != existing_member['membership_type']:
-            monthly_fee = calculate_membership_fee(member_update.membership_type)
-            update_data['monthly_fee_amount'] = monthly_fee
-            update_data['total_amount_due'] = 1500.0 + monthly_fee
+        update_data['join_date'] = new_join_date
+        update_data['membership_start'] = new_join_date
+        
+        # Recalculate membership end date if join date or membership type changed
+        new_membership_end = calculate_membership_end_date(new_join_date, member_update.membership_type)
+        update_data['membership_end'] = new_membership_end
+        
+        # Recalculate fees if membership type changed
+        membership_fee = await calculate_membership_fee(member_update.membership_type)
+        update_data['monthly_fee_amount'] = membership_fee
+        
+        # Apply admission fee ONLY for monthly memberships (and only if type changed to monthly)
+        admission_fee = 0.0
+        existing_type = existing_member.get('membership_type', '')
+        if member_update.membership_type == MembershipType.MONTHLY:
+            if existing_type != 'MONTHLY':
+                # Only charge admission fee when switching TO monthly from another type
+                admission_fee = await get_admission_fee()
+        
+        # If switching FROM monthly to another type, remove admission fee
+        elif existing_type == 'MONTHLY' and member_update.membership_type != MembershipType.MONTHLY:
+            admission_fee = 0.0
+        else:
+            # Keep existing admission fee
+            admission_fee = existing_member.get('admission_fee_amount', 0.0)
+        
+        update_data['admission_fee_amount'] = admission_fee
+        update_data['total_amount_due'] = admission_fee + membership_fee
         
         # Prepare for MongoDB
         update_data = prepare_for_mongo(update_data)
@@ -900,6 +928,13 @@ async def update_member(member_id: str, member_update: MemberCreate):
         await db.members.update_one(
             {"id": member_id},
             {"$set": update_data}
+        )
+        
+        # Send notification about member update
+        await send_system_notification(
+            f"Member '{existing_member.get('name')}' updated",
+            f"Updated by {current_user.full_name} | Type: {member_update.membership_type.value} | Start: {new_join_date.strftime('%Y-%m-%d')}",
+            "info"
         )
         
         # Get updated member
