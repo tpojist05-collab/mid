@@ -31,6 +31,8 @@ function App() {
         return <MemberManagement />;
       case 'payments':
         return <PaymentManagement />;
+      case 'reminders':
+        return <ReminderManagement />;
       default:
         return <Dashboard />;
     }
