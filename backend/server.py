@@ -725,6 +725,61 @@ async def test_reminder_service():
         logger.error(f"Error testing reminder service: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Gym Settings Routes
+@api_router.get("/settings", response_model=GymSettings)
+async def get_gym_settings():
+    try:
+        settings = await db.gym_settings.find_one()
+        if not settings:
+            # Create default settings
+            default_settings = GymSettings(
+                membership_plans={
+                    "monthly": {"price": 2000, "duration_days": 30, "name": "Monthly Plan"},
+                    "quarterly": {"price": 5500, "duration_days": 90, "name": "Quarterly Plan"},
+                    "six_monthly": {"price": 10500, "duration_days": 180, "name": "Six Monthly Plan"}
+                },
+                terms_conditions="Welcome to Iron Paradise Gym. Please follow all gym rules and regulations."
+            )
+            settings_dict = prepare_for_mongo(default_settings.dict())
+            await db.gym_settings.insert_one(settings_dict)
+            return default_settings
+        
+        return GymSettings(**parse_from_mongo(settings))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/settings", response_model=GymSettings)
+async def update_gym_settings(
+    settings_update: SettingsUpdate, 
+    current_user: User = Depends(get_current_active_user)
+):
+    try:
+        # Get current settings
+        current_settings = await db.gym_settings.find_one()
+        if not current_settings:
+            raise HTTPException(status_code=404, detail="Settings not found")
+        
+        # Update settings
+        update_data = {k: v for k, v in settings_update.dict().items() if v is not None}
+        update_data['updated_by'] = current_user.username
+        update_data['updated_at'] = datetime.now(timezone.utc)
+        
+        update_data = prepare_for_mongo(update_data)
+        
+        await db.gym_settings.update_one(
+            {"id": current_settings["id"]},
+            {"$set": update_data}
+        )
+        
+        # Get updated settings
+        updated_settings = await db.gym_settings.find_one({"id": current_settings["id"]})
+        return GymSettings(**parse_from_mongo(updated_settings))
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Include the router in the main app
 app.include_router(api_router)
 
