@@ -12,6 +12,7 @@ const Navigation = ({ currentPage, setCurrentPage, isAdmin }) => {
   // Add admin-only tabs
   if (isAdmin) {
     navItems.push(
+      { id: 'earnings', label: 'Earnings', icon: '💰' },
       { id: 'users', label: 'Users', icon: '👤' },
       { id: 'receipts', label: 'Receipts', icon: '🧾' },
       { id: 'settings', label: 'Settings', icon: '⚙️' }
