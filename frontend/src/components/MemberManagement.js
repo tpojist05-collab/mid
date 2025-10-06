@@ -510,24 +510,44 @@ const MemberManagement = () => {
                 <p className="text-sm text-slate-600">{member.emergency_contact.phone}</p>
               </div>
               
-              <div className="flex justify-end gap-2 pt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => sendReminderToMember(member)}
-                  className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                  data-testid={`remind-member-${member.id}`}
-                >
-                  📱 Send Reminder
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => handleEdit(member)}
-                  data-testid={`edit-member-${member.id}`}
-                >
-                  Edit Member
-                </Button>
+              <div className="space-y-3">
+                {/* Status Actions */}
+                <div className="pt-2">
+                  <p className="text-xs text-slate-600 mb-2">Quick Actions:</p>
+                  {getStatusActions(member)}
+                </div>
+                
+                {/* Main Actions */}
+                <div className="flex justify-end gap-2 pt-2 border-t">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => sendReminderToMember(member)}
+                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                    data-testid={`remind-member-${member.id}`}
+                  >
+                    📱 Send Reminder
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => handleEdit(member)}
+                    data-testid={`edit-member-${member.id}`}
+                  >
+                    ✏️ Edit
+                  </Button>
+                  {isAdmin() && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => deleteMember(member)}
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                      data-testid={`delete-member-${member.id}`}
+                    >
+                      🗑️ Delete
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
