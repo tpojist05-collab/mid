@@ -243,7 +243,7 @@ const PaymentManagement = () => {
                 
                 <Button 
                   type="button"
-                  onClick={handleSubmit}
+                  onClick={handleManualPaymentSubmit}
                   className="w-full mt-4"
                   data-testid="save-payment-btn"
                 >
