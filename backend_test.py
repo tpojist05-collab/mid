@@ -406,7 +406,11 @@ class IronParadiseGymAPITester:
 
     def test_get_all_payments(self):
         """Test getting all payments"""
-        success, response = self.make_request('GET', 'payments')
+        if not self.auth_token:
+            self.log_test("Get All Payments", False, "No auth token available for testing")
+            return
+            
+        success, response = self.make_request('GET', 'payments', auth_required=True)
         
         if success:
             if isinstance(response, list):
@@ -427,11 +431,11 @@ class IronParadiseGymAPITester:
 
     def test_get_member_payments(self):
         """Test getting payments for a specific member"""
-        if not self.created_member_id:
-            self.log_test("Get Member Payments", False, "No member ID available for testing")
+        if not self.created_member_id or not self.auth_token:
+            self.log_test("Get Member Payments", False, "No member ID or auth token available for testing")
             return
             
-        success, response = self.make_request('GET', f'payments/{self.created_member_id}')
+        success, response = self.make_request('GET', f'payments/{self.created_member_id}', auth_required=True)
         
         if success:
             if isinstance(response, list):
@@ -444,7 +448,11 @@ class IronParadiseGymAPITester:
 
     def test_dashboard_stats(self):
         """Test dashboard statistics endpoint"""
-        success, response = self.make_request('GET', 'dashboard/stats')
+        if not self.auth_token:
+            self.log_test("Dashboard Stats", False, "No auth token available for testing")
+            return
+            
+        success, response = self.make_request('GET', 'dashboard/stats', auth_required=True)
         
         if success:
             required_fields = ['total_members', 'active_members', 'pending_members', 'monthly_revenue']
@@ -465,7 +473,11 @@ class IronParadiseGymAPITester:
 
     def test_expiring_members(self):
         """Test getting expiring members"""
-        success, response = self.make_request('GET', 'members/expiring-soon?days=7')
+        if not self.auth_token:
+            self.log_test("Get Expiring Members", False, "No auth token available for testing")
+            return
+            
+        success, response = self.make_request('GET', 'members/expiring-soon?days=7', auth_required=True)
         
         if success:
             if isinstance(response, list):
