@@ -201,7 +201,16 @@ const Dashboard = () => {
             <Button 
               className="btn-animate bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-6 rounded-xl"
               data-testid="add-member-btn"
-              onClick={() => window.dispatchEvent(new CustomEvent('openAddMemberModal'))}
+              onClick={() => {
+                // Navigate to members page and trigger add modal
+                if (window.setCurrentPage) {
+                  window.setCurrentPage('members');
+                  setTimeout(() => {
+                    const event = new CustomEvent('openAddMemberModal');
+                    window.dispatchEvent(event);
+                  }, 100);
+                }
+              }}
             >
               <div className="text-center">
                 <div className="text-2xl mb-2">👤</div>
