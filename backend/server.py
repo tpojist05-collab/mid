@@ -495,7 +495,7 @@ async def update_monthly_earnings(payment: dict):
         month = payment_date.month
         month_name = payment_date.strftime('%B')
         amount = payment['amount']
-        method = payment['method']
+        method = payment['payment_method']
         
         # Find or create monthly earnings record
         earnings_query = {"year": year, "month": month}
