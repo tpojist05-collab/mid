@@ -206,14 +206,18 @@ class SettingsUpdate(BaseModel):
     terms_conditions: Optional[str] = None
 
 # Authentication Helper Functions
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain_password, stored_hash):
+    try:
+        # stored_hash format: "salt:hash"
+        salt, hash_value = stored_hash.split(':')
+        return hash_value == hashlib.sha256((plain_password + salt).encode()).hexdigest()
+    except:
+        return False
 
 def get_password_hash(password):
-    # Ensure password is not longer than 72 bytes for bcrypt
-    if len(password.encode('utf-8')) > 72:
-        password = password[:72]
-    return pwd_context.hash(password)
+    salt = create_salt()
+    hash_value = hashlib.sha256((password + salt).encode()).hexdigest()
+    return f"{salt}:{hash_value}"
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
