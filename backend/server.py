@@ -402,7 +402,10 @@ async def create_member(member_data: MemberCreate, current_user: User = Depends(
         raise HTTPException(status_code=400, detail=str(e))
 
 @api_router.get("/members", response_model=List[Member])
-async def get_members():
+async def get_members(
+    status: Optional[str] = None, 
+    current_user: User = Depends(get_current_active_user)
+):
     try:
         members = await db.members.find().to_list(1000)
         return [Member(**parse_from_mongo(member)) for member in members]
