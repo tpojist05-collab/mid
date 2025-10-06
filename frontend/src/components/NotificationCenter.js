@@ -238,13 +238,35 @@ const NotificationCenter = () => {
           <span className="text-sm text-slate-600">
             {notifications.length} total notifications
           </span>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setIsOpen(false)}
-          >
-            Close
-          </Button>
+          <div className="flex gap-2">
+            {unreadCount > 0 && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={markAllAsRead}
+                className="text-blue-600 border-blue-200 hover:bg-blue-50"
+              >
+                Mark all read
+              </Button>
+            )}
+            {notifications.length > 0 && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={clearAllNotifications}
+                className="text-red-600 border-red-200 hover:bg-red-50"
+              >
+                Clear all
+              </Button>
+            )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setIsOpen(false)}
+            >
+              Close
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
