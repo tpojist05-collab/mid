@@ -203,8 +203,8 @@ const Dashboard = ({ setCurrentPage }) => {
               data-testid="add-member-btn"
               onClick={() => {
                 // Navigate to members page and trigger add modal
-                if (window.setCurrentPage) {
-                  window.setCurrentPage('members');
+                if (setCurrentPage) {
+                  setCurrentPage('members');
                   setTimeout(() => {
                     const event = new CustomEvent('openAddMemberModal');
                     window.dispatchEvent(event);
