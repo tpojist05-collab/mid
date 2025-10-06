@@ -356,6 +356,121 @@ async def get_dashboard_stats():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Razorpay Payment Routes
+@api_router.post("/razorpay/create-order", response_model=RazorpayOrderResponse)
+async def create_razorpay_order(order_data: RazorpayOrderCreate):
+    try:
+        # Verify member exists
+        member = await db.members.find_one({"id": order_data.member_id})
+        if not member:
+            raise HTTPException(status_code=404, detail="Member not found")
+        
+        # Convert amount to paise (Razorpay expects amount in smallest currency unit)
+        amount_in_paise = int(order_data.amount * 100)
+        
+        # Create Razorpay order
+        razorpay_order = razorpay_client.order.create({
+            "amount": amount_in_paise,
+            "currency": order_data.currency,
+            "payment_capture": 1,
+            "notes": {
+                "member_id": order_data.member_id,
+                "member_name": member.get("name", ""),
+                "description": order_data.description
+            }
+        })
+        
+        # Store order in database
+        order_record = {
+            "order_id": razorpay_order["id"],
+            "member_id": order_data.member_id,
+            "amount": order_data.amount,
+            "amount_in_paise": amount_in_paise,
+            "currency": order_data.currency,
+            "description": order_data.description,
+            "status": "created",
+            "created_at": datetime.now(timezone.utc)
+        }
+        
+        await db.razorpay_orders.insert_one(order_record)
+        
+        return RazorpayOrderResponse(
+            order_id=razorpay_order["id"],
+            amount=amount_in_paise,
+            currency=order_data.currency,
+            key_id=os.environ['RAZORPAY_KEY_ID']
+        )
+        
+    except Exception as e:
+        logger.error(f"Error creating Razorpay order: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/razorpay/verify-payment")
+async def verify_razorpay_payment(payment_data: RazorpayPaymentVerify):
+    try:
+        # Verify payment signature
+        params_dict = {
+            'razorpay_order_id': payment_data.razorpay_order_id,
+            'razorpay_payment_id': payment_data.razorpay_payment_id,
+            'razorpay_signature': payment_data.razorpay_signature
+        }
+        
+        try:
+            razorpay_client.utility.verify_payment_signature(params_dict)
+        except Exception as e:
+            logger.error(f"Payment signature verification failed: {e}")
+            raise HTTPException(status_code=400, detail="Payment signature verification failed")
+        
+        # Get order details
+        order = await db.razorpay_orders.find_one({"order_id": payment_data.razorpay_order_id})
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+        
+        # Create payment record
+        payment_record = PaymentRecord(
+            member_id=payment_data.member_id,
+            amount=order["amount"],
+            payment_method=PaymentMethod.RAZORPAY,
+            description=payment_data.description,
+            razorpay_payment_id=payment_data.razorpay_payment_id
+        )
+        
+        # Save payment
+        payment_dict = prepare_for_mongo(payment_record.dict())
+        await db.payments.insert_one(payment_dict)
+        
+        # Update member payment status
+        await db.members.update_one(
+            {"id": payment_data.member_id},
+            {"$set": {
+                "current_payment_status": PaymentStatus.PAID.value,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        # Update order status
+        await db.razorpay_orders.update_one(
+            {"order_id": payment_data.razorpay_order_id},
+            {"$set": {
+                "status": "paid",
+                "payment_id": payment_data.razorpay_payment_id,
+                "paid_at": datetime.now(timezone.utc)
+            }}
+        )
+        
+        return {"status": "success", "message": "Payment verified and recorded successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error verifying payment: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/razorpay/key")
+async def get_razorpay_key():
+    """Get Razorpay public key for frontend"""
+    return {"key_id": os.environ['RAZORPAY_KEY_ID']}
+
 # Include the router in the main app
 app.include_router(api_router)
 
