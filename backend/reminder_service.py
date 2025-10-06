@@ -132,18 +132,24 @@ class ReminderService:
             return False
 
     async def send_reminder(self, member: Dict[str, Any], days: int) -> bool:
-        """Send reminder to member via SMS"""
+        """Send reminder to member via WhatsApp and SMS"""
         try:
             message = self.create_reminder_message(member, days)
             
-            # Try SMS first
+            # Try WhatsApp first
             if self.twilio_client:
-                success = await self.send_sms(member['phone'], message)
-                if success:
+                whatsapp_success = await self.send_whatsapp(member['phone'], message)
+                if whatsapp_success:
+                    logger.info(f"WhatsApp reminder sent to {member['name']} ({member['phone']})")
+                    return True
+                
+                # Fallback to SMS if WhatsApp fails
+                sms_success = await self.send_sms(member['phone'], message)
+                if sms_success:
                     logger.info(f"SMS reminder sent to {member['name']} ({member['phone']})")
                     return True
             
-            # Fallback to email (if implemented) or log only
+            # Fallback to log only
             logger.info(f"Reminder for {member['name']}: {message}")
             return True  # Consider logged reminder as "sent"
             
