@@ -476,8 +476,137 @@ class IronParadiseGymAPITester:
         else:
             self.log_test("Get Expiring Members", False, "Failed to get expiring members", response)
 
+    def test_receipt_generation(self):
+        """Test receipt generation for payments"""
+        if not self.auth_token or not self.created_payment_id:
+            self.log_test("Receipt Generation", False, "No auth token or payment ID available for testing")
+            return
+            
+        success, response = self.make_request('POST', f'receipts/generate/{self.created_payment_id}', 
+                                            auth_required=True)
+        
+        if success:
+            required_fields = ['message', 'receipt_id', 'receipt_html']
+            missing_fields = [field for field in required_fields if field not in response]
+            
+            if not missing_fields:
+                receipt_id = response.get('receipt_id')
+                receipt_html = response.get('receipt_html')
+                
+                if receipt_html and len(receipt_html) > 100:  # Basic check for HTML content
+                    self.log_test("Receipt Generation", True, f"Receipt generated with ID: {receipt_id}")
+                else:
+                    self.log_test("Receipt Generation", False, "Generated receipt HTML seems incomplete")
+            else:
+                self.log_test("Receipt Generation", False, f"Missing required fields: {missing_fields}", response)
+        else:
+            self.log_test("Receipt Generation", False, "Failed to generate receipt", response)
+
+    def test_razorpay_integration(self):
+        """Test Razorpay payment gateway integration"""
+        if not self.created_member_id:
+            self.log_test("Razorpay Integration", False, "No member ID available for testing")
+            return
+            
+        order_data = {
+            "member_id": self.created_member_id,
+            "amount": 2000.0,
+            "currency": "INR",
+            "description": "Monthly membership fee"
+        }
+        
+        success, response = self.make_request('POST', 'razorpay/create-order', order_data)
+        
+        if success:
+            required_fields = ['order_id', 'amount', 'currency', 'key_id']
+            missing_fields = [field for field in required_fields if field not in response]
+            
+            if not missing_fields:
+                order_id = response.get('order_id')
+                amount = response.get('amount')
+                key_id = response.get('key_id')
+                
+                if order_id and amount == 200000 and key_id:  # Amount in paise
+                    self.log_test("Razorpay Integration", True, f"Razorpay order created: {order_id}")
+                else:
+                    self.log_test("Razorpay Integration", False, "Razorpay order data validation failed", response)
+            else:
+                self.log_test("Razorpay Integration", False, f"Missing required fields: {missing_fields}", response)
+        else:
+            self.log_test("Razorpay Integration", False, "Failed to create Razorpay order", response)
+
+    def test_razorpay_key_endpoint(self):
+        """Test Razorpay public key endpoint"""
+        success, response = self.make_request('GET', 'razorpay/key')
+        
+        if success:
+            key_id = response.get('key_id')
+            if key_id and key_id.startswith('rzp_'):
+                self.log_test("Razorpay Key Endpoint", True, f"Razorpay key retrieved: {key_id}")
+            else:
+                self.log_test("Razorpay Key Endpoint", False, "Invalid Razorpay key format", response)
+        else:
+            self.log_test("Razorpay Key Endpoint", False, "Failed to get Razorpay key", response)
+
+    def test_user_management(self):
+        """Test user management endpoints"""
+        if not self.auth_token:
+            self.log_test("User Management", False, "No auth token available for testing")
+            return
+            
+        # Test getting all users (admin only)
+        success, response = self.make_request('GET', 'users', auth_required=True)
+        
+        if success:
+            if isinstance(response, list):
+                user_count = len(response)
+                admin_users = [user for user in response if user.get('role') == 'admin']
+                
+                if admin_users:
+                    self.log_test("User Management", True, f"Retrieved {user_count} users, {len(admin_users)} admins")
+                else:
+                    self.log_test("User Management", False, "No admin users found in system")
+            else:
+                self.log_test("User Management", False, "Expected list response for users", response)
+        else:
+            self.log_test("User Management", False, "Failed to get users list", response)
+
+    def test_role_based_access_control(self):
+        """Test role-based access control"""
+        if not self.auth_token:
+            self.log_test("Role-Based Access Control", False, "No auth token available for testing")
+            return
+            
+        # Test admin access to permissions endpoint
+        success, response = self.make_request('GET', 'permissions', auth_required=True)
+        
+        if success:
+            if isinstance(response, list):
+                permission_count = len(response)
+                
+                # Check for expected permissions
+                expected_modules = ['members', 'payments', 'reports', 'settings', 'users']
+                found_modules = list(set([perm.get('module') for perm in response]))
+                
+                missing_modules = [mod for mod in expected_modules if mod not in found_modules]
+                
+                if not missing_modules:
+                    self.log_test("Role-Based Access Control", True, 
+                                f"Found {permission_count} permissions across modules: {found_modules}")
+                else:
+                    self.log_test("Role-Based Access Control", False, 
+                                f"Missing permission modules: {missing_modules}")
+            else:
+                self.log_test("Role-Based Access Control", False, "Expected list response for permissions", response)
+        else:
+            self.log_test("Role-Based Access Control", False, "Failed to get permissions", response)
+
     def test_membership_pricing(self):
         """Test membership pricing calculations"""
+        if not self.auth_token:
+            self.log_test("Membership Pricing", False, "No auth token available for testing")
+            return
+            
         pricing_tests = [
             {"type": "monthly", "expected_fee": 2000.0, "expected_total": 3500.0},
             {"type": "quarterly", "expected_fee": 5500.0, "expected_total": 7000.0},
@@ -499,7 +628,7 @@ class IronParadiseGymAPITester:
                 "membership_type": test['type']
             }
             
-            success, response = self.make_request('POST', 'members', member_data)
+            success, response = self.make_request('POST', 'members', member_data, auth_required=True)
             
             if success:
                 actual_fee = response.get('monthly_fee_amount', 0)
@@ -518,6 +647,33 @@ class IronParadiseGymAPITester:
             self.log_test("Membership Pricing", True, "All membership types have correct pricing")
         else:
             self.log_test("Membership Pricing", False, "Pricing calculation errors found")
+
+    def test_error_handling(self):
+        """Test error handling for invalid requests"""
+        # Test invalid member creation
+        invalid_member_data = {
+            "name": "",  # Empty name
+            "email": "invalid-email",  # Invalid email
+            "phone": "123",  # Invalid phone
+            "membership_type": "invalid_type"  # Invalid membership type
+        }
+        
+        success, response = self.make_request('POST', 'members', invalid_member_data, 
+                                            expected_status=422, auth_required=True)
+        
+        if success:  # success means we got the expected 422 status
+            self.log_test("Error Handling - Invalid Data", True, "API correctly validates and rejects invalid data")
+        else:
+            self.log_test("Error Handling - Invalid Data", False, "API should return 422 for invalid data", response)
+
+        # Test accessing non-existent member
+        success, response = self.make_request('GET', 'members/non-existent-id', 
+                                            expected_status=404, auth_required=True)
+        
+        if success:  # success means we got the expected 404 status
+            self.log_test("Error Handling - Not Found", True, "API correctly returns 404 for non-existent resources")
+        else:
+            self.log_test("Error Handling - Not Found", False, "API should return 404 for non-existent resources", response)
 
     def run_all_tests(self):
         """Run all API tests"""
