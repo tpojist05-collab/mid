@@ -1435,6 +1435,13 @@ class IronParadiseGymAPITester:
         self.test_dashboard_stats()
         self.test_expiring_members()
         
+        print("\n📱 NEW FEATURES TESTS - WHATSAPP REMINDERS & EARNINGS TRACKING")
+        print("-" * 40)
+        self.test_whatsapp_reminder_system()
+        self.test_monthly_earnings_tracking()
+        self.test_payment_method_tracking()
+        self.test_integration_payment_earnings_flow()
+        
         print("\n🛡️ ERROR HANDLING & SECURITY TESTS")
         print("-" * 40)
         self.test_error_handling()
