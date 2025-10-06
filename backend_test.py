@@ -6,7 +6,7 @@ import json
 from datetime import datetime, timezone
 from typing import Dict, Any, List
 
-class GymMembershipAPITester:
+class IronParadiseGymAPITester:
     def __init__(self, base_url="https://gymflow-59.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
@@ -15,6 +15,9 @@ class GymMembershipAPITester:
         self.test_results = []
         self.created_member_id = None
         self.created_payment_id = None
+        self.auth_token = None
+        self.admin_user = None
+        self.created_template_id = None
 
     def log_test(self, name: str, success: bool, details: str = "", response_data: Any = None):
         """Log test result"""
