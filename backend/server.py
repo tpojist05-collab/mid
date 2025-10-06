@@ -74,7 +74,9 @@ class PaymentMethod(str, Enum):
 
 class UserRole(str, Enum):
     ADMIN = "admin"
-    STAFF = "staff"
+    MANAGER = "manager"
+    TRAINER = "trainer"
+    RECEPTIONIST = "receptionist"
 
 class MemberStatus(str, Enum):
     ACTIVE = "active"
