@@ -13,7 +13,8 @@ from enum import Enum
 import razorpay
 from reminder_service import init_reminder_service, get_reminder_service
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import hashlib
+import secrets
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi import Depends, HTTPException, status
 
