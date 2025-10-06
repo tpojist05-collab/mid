@@ -1315,14 +1315,20 @@ async def startup_event():
     """Initialize services on startup"""
     global reminder_service_instance
     try:
+        logger.info("🚀 Starting Iron Paradise Gym initialization...")
+        
         # Initialize default permissions
         await initialize_default_permissions()
+        logger.info("✅ Default permissions initialized")
         
         # Initialize default payment gateways
         await initialize_default_payment_gateways()
+        logger.info("✅ Default payment gateways initialized")
         
         # Create default admin user ONLY if no admin exists
+        logger.info("🔍 Checking for existing admin users...")
         admin_count = await db.users.count_documents({"role": "admin"})
+        logger.info(f"📊 Found {admin_count} admin users")
         if admin_count == 0:
             # Create secure admin setup
             admin_user = User(
