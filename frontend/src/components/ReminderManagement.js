@@ -1,261 +1,335 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Badge } from './ui/badge';
-import { apiClient } from '../App';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { MessageSquare, Send, Clock, Users, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 const ReminderManagement = () => {
-  const [reminders, setReminders] = useState([]);
+  const { user, token } = useAuth();
+  const [expiringMembers, setExpiringMembers] = useState([]);
+  const [reminderHistory, setReminderHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [testingReminders, setTestingReminders] = useState(false);
+  const [error, setError] = useState(null);
+  const [selectedDays, setSelectedDays] = useState(7);
+  const [bulkSending, setBulkSending] = useState(false);
+  const [showBulkDialog, setShowBulkDialog] = useState(false);
 
   useEffect(() => {
+    fetchExpiringMembers();
     fetchReminderHistory();
-  }, []);
+  }, [selectedDays]);
 
-  const fetchReminderHistory = async () => {
+  const fetchExpiringMembers = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/reminders/history');
-      setReminders(response.data.reminders);
+      setError(null);
+      
+      const response = await axios.get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/reminders/expiring-members?days=${selectedDays}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setExpiringMembers(response.data.expiring_members || []);
     } catch (error) {
-      console.error('Error fetching reminders:', error);
-      toast.error('Failed to load reminder history');
+      console.error('Error fetching expiring members:', error);
+      setError('Failed to load expiring members');
     } finally {
       setLoading(false);
     }
   };
 
-  const sendManualReminder = async (memberId, memberName) => {
+  const fetchReminderHistory = async () => {
     try {
-      await apiClient.post(`/reminders/send/${memberId}`);
-      toast.success(`Reminder sent to ${memberName}`);
-      fetchReminderHistory(); // Refresh history
+      const response = await axios.get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/reminders/history`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setReminderHistory(response.data || []);
     } catch (error) {
-      console.error('Error sending reminder:', error);
-      toast.error('Failed to send reminder');
+      console.error('Error fetching reminder history:', error);
     }
   };
 
-  const testReminderService = async () => {
+  const sendIndividualReminder = async (memberId, memberName) => {
     try {
-      setTestingReminders(true);
-      await apiClient.post('/reminders/test');
-      toast.success('Reminder check completed successfully');
-      fetchReminderHistory(); // Refresh history
+      const response = await axios.post(
+        `${process.env.REACT_APP_BACKEND_URL}/api/reminders/send/${memberId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast.success(`WhatsApp reminder sent to ${memberName}!`);
+      
+      // Refresh data to update reminder status
+      await fetchExpiringMembers();
+      await fetchReminderHistory();
+      
     } catch (error) {
-      console.error('Error testing reminders:', error);
-      toast.error('Failed to test reminder service');
+      console.error('Error sending reminder:', error);
+      toast.error(`Failed to send reminder to ${memberName}`);
+    }
+  };
+
+  const sendBulkReminders = async (days) => {
+    try {
+      setBulkSending(true);
+      
+      const response = await axios.post(
+        `${process.env.REACT_APP_BACKEND_URL}/api/reminders/send-bulk`,
+        { days_before_expiry: days },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      const result = response.data;
+      toast.success(`Bulk reminders sent! ${result.sent} successful, ${result.failed} failed`);
+      
+      setShowBulkDialog(false);
+      
+      // Refresh data
+      await fetchExpiringMembers();
+      await fetchReminderHistory();
+      
+    } catch (error) {
+      console.error('Error sending bulk reminders:', error);
+      toast.error('Failed to send bulk reminders');
     } finally {
-      setTestingReminders(false);
+      setBulkSending(false);
     }
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      month: 'short',
+      day: 'numeric'
     });
   };
 
-  const getDaysLabel = (days) => {
-    if (days === 1) return '1 day before';
-    if (days === 3) return '3 days before';
-    if (days === 7) return '7 days before';
-    return `${days} days before`;
+  const getUrgencyColor = (days) => {
+    if (days <= 1) return 'bg-red-100 text-red-800 border-red-200';
+    if (days <= 3) return 'bg-orange-100 text-orange-800 border-orange-200';
+    if (days <= 7) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    return 'bg-green-100 text-green-800 border-green-200';
+  };
+
+  const getUrgencyText = (days) => {
+    if (days <= 0) return 'EXPIRED';
+    if (days === 1) return 'TOMORROW';
+    if (days <= 3) return 'URGENT';
+    if (days <= 7) return 'SOON';
+    return 'UPCOMING';
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="spinner"></div>
-        <span className="ml-3 text-slate-600">Loading reminders...</span>
+      <div className="p-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 fade-in">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-800">Automated Reminders</h2>
-        <Button 
-          onClick={testReminderService}
-          disabled={testingReminders}
-          className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-        >
-          {testingReminders ? (
-            <div className="flex items-center">
-              <div className="spinner mr-2"></div>
-              Testing...
-            </div>
-          ) : (
-            '🔄 Run Reminder Check'
-          )}
-        </Button>
-      </div>
-
-      {/* System Status */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="glass border-0">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-700 flex items-center">
-              <span className="mr-2">📅</span>
-              Schedule
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-semibold text-slate-800">Daily at 9 AM & 6 PM</div>
-            <p className="text-xs text-slate-600 mt-1">
-              Automatic reminder checks
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="glass border-0">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-700 flex items-center">
-              <span className="mr-2">📱</span>
-              SMS Service
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center">
-              <Badge className="bg-green-100 text-green-800 border-green-200">
-                Active
-              </Badge>
-            </div>
-            <p className="text-xs text-slate-600 mt-1">
-              Via Twilio SMS
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="glass border-0">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-700 flex items-center">
-              <span className="mr-2">📊</span>
-              Reminders Sent
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-semibold text-slate-800">{reminders.length}</div>
-            <p className="text-xs text-slate-600 mt-1">
-              Total sent this month
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Reminder Types */}
-      <Card className="glass border-0">
-        <CardHeader>
-          <CardTitle className="text-slate-800 flex items-center">
-            <span className="mr-2">⚙️</span>
-            Reminder Configuration
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
-              <div className="text-2xl mb-2">⏰</div>
-              <div className="font-semibold text-slate-800">7 Days Before</div>
-              <div className="text-sm text-slate-600">Early reminder to plan renewal</div>
-            </div>
-            <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-              <div className="text-2xl mb-2">⚠️</div>
-              <div className="font-semibold text-slate-800">3 Days Before</div>
-              <div className="text-sm text-slate-600">Urgent renewal reminder</div>
-            </div>
-            <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
-              <div className="text-2xl mb-2">🚨</div>
-              <div className="font-semibold text-slate-800">1 Day Before</div>
-              <div className="text-sm text-slate-600">Final expiry warning</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Reminder History */}
-      <Card className="glass border-0">
-        <CardHeader>
-          <CardTitle className="text-slate-800 flex items-center">
-            <span className="mr-2">📋</span>
-            Recent Reminders
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {reminders.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="text-4xl mb-4">📱</div>
-              <h3 className="text-lg font-medium text-slate-800 mb-2">
-                No reminders sent yet
-              </h3>
-              <p className="text-slate-600 mb-4">
-                Reminders will appear here when members' memberships are about to expire.
-              </p>
-              <Button 
-                onClick={testReminderService}
-                variant="outline"
-                disabled={testingReminders}
-              >
-                Test Reminder System
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {reminders.slice(0, 10).map((reminder, index) => (
-                <div 
-                  key={index}
-                  className="flex items-center justify-between p-4 bg-white/60 rounded-lg border border-slate-200"
-                >
-                  <div className="flex-1">
-                    <div className="font-medium text-slate-800">
-                      {reminder.member_name}
-                    </div>
-                    <div className="text-sm text-slate-600">
-                      Reminded {getDaysLabel(reminder.days_before_expiry)} expiry
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      Membership expires: {new Date(reminder.membership_end).toLocaleDateString('en-IN')}
-                    </div>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">WhatsApp Reminders</h1>
+        <div className="flex gap-3">
+          <Select value={selectedDays.toString()} onValueChange={(value) => setSelectedDays(parseInt(value))}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">Expiring Tomorrow</SelectItem>
+              <SelectItem value="3">Expiring in 3 Days</SelectItem>
+              <SelectItem value="7">Expiring in 7 Days</SelectItem>
+              <SelectItem value="15">Expiring in 15 Days</SelectItem>
+              <SelectItem value="30">Expiring in 30 Days</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          {user?.role === 'admin' && expiringMembers.length > 0 && (
+            <Dialog open={showBulkDialog} onOpenChange={setShowBulkDialog}>
+              <DialogTrigger asChild>
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  <Users className="w-4 h-4 mr-2" />
+                  Bulk Send
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Send Bulk WhatsApp Reminders</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-blue-800">
+                      Send WhatsApp reminders to all {expiringMembers.length} members expiring in {selectedDays} days.
+                    </p>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm text-slate-600">
-                      {formatDate(reminder.sent_at)}
-                    </div>
-                    <Badge variant="outline" className="text-green-600 border-green-300">
-                      Sent
-                    </Badge>
+                  <div className="flex gap-3">
+                    <Button variant="outline" onClick={() => setShowBulkDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={() => sendBulkReminders(selectedDays)}
+                      disabled={bulkSending}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {bulkSending ? 'Sending...' : 'Send to All'}
+                    </Button>
                   </div>
                 </div>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <p className="text-red-600">{error}</p>
+          <Button variant="outline" size="sm" onClick={fetchExpiringMembers} className="mt-2">
+            Retry
+          </Button>
+        </div>
+      )}
+
+      <Tabs defaultValue="expiring" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="expiring" className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4" />
+            Expiring Members ({expiringMembers.length})
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Reminder History
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="expiring" className="space-y-4">
+          {expiringMembers.length === 0 ? (
+            <Card>
+              <CardContent className="flex items-center justify-center h-32">
+                <div className="text-center">
+                  <MessageSquare className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-500">No members expiring in {selectedDays} days</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {expiringMembers.map((member) => {
+                const daysLeft = Math.ceil(
+                  (new Date(member.membership_end) - new Date()) / (1000 * 60 * 60 * 24)
+                );
+                
+                return (
+                  <Card key={member.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div>
+                            <h3 className="font-medium text-lg">{member.name}</h3>
+                            <p className="text-sm text-gray-600">{member.phone}</p>
+                            <p className="text-xs text-gray-500">
+                              Expires: {formatDate(member.membership_end)}
+                            </p>
+                          </div>
+                          
+                          <Badge className={`${getUrgencyColor(daysLeft)} border`}>
+                            {getUrgencyText(daysLeft)}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center space-x-3">
+                          {member.reminder_sent_today && (
+                            <Badge variant="outline" className="text-green-600 border-green-200">
+                              ✓ Sent Today
+                            </Badge>
+                          )}
+                          
+                          <Button
+                            onClick={() => sendIndividualReminder(member.id, member.name)}
+                            variant={member.reminder_sent_today ? 'outline' : 'default'}
+                            size="sm"
+                            className={member.reminder_sent_today ? '' : 'bg-green-600 hover:bg-green-700'}
+                          >
+                            <Send className="w-4 h-4 mr-2" />
+                            {member.reminder_sent_today ? 'Send Again' : 'Send WhatsApp'}
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-3 flex items-center justify-between text-sm">
+                        <span className="text-gray-600">
+                          Plan: {member.membership_type?.replace('_', ' ').toUpperCase()}
+                        </span>
+                        <span className="text-gray-600">
+                          {daysLeft > 0 ? `${daysLeft} days left` : 'EXPIRED'}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="history" className="space-y-4">
+          {reminderHistory.length === 0 ? (
+            <Card>
+              <CardContent className="flex items-center justify-center h-32">
+                <div className="text-center">
+                  <Clock className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-500">No reminder history available</p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {reminderHistory.slice(0, 20).map((reminder) => (
+                <Card key={`${reminder.member_id}-${reminder.sent_at}`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium">{reminder.member_name}</h4>
+                        <p className="text-sm text-gray-600">
+                          Reminder for {reminder.days_before_expiry} days before expiry
+                        </p>
+                      </div>
+                      <div className="text-right text-sm">
+                        <p className="font-medium">
+                          {formatDate(reminder.sent_date)}
+                        </p>
+                        <Badge variant="outline" className="text-green-600">
+                          <MessageSquare className="w-3 h-3 mr-1" />
+                          WhatsApp Sent
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Manual Reminder Section */}
-      <Card className="glass border-0 bg-gradient-to-r from-blue-50 to-indigo-50">
-        <CardHeader>
-          <CardTitle className="text-slate-800 flex items-center">
-            <span className="mr-2">📤</span>
-            Send Manual Reminder
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-slate-600 mb-4">
-            Need to send a reminder outside the automatic schedule? Use the member management section to send individual reminders.
-          </p>
-          <div className="text-sm text-slate-500">
-            💡 <strong>Tip:</strong> Go to Members → Select a member → Click "Send Reminder" to send individual notifications.
-          </div>
-        </CardContent>
-      </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
