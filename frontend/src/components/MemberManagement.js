@@ -330,7 +330,7 @@ const MemberManagement = () => {
               Add New Member
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto z-50">
             <DialogHeader>
               <DialogTitle>Add New Member</DialogTitle>
             </DialogHeader>
