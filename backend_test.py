@@ -1120,6 +1120,15 @@ class IronParadiseGymAPITester:
         self.test_update_member()
         self.test_membership_pricing()
         
+        print("\n🆕 NEW FEATURES TESTS - ADMISSION FEE & BACKDATING")
+        print("-" * 40)
+        self.test_admission_fee_management()
+        self.test_member_start_date_backdating()
+        self.test_enhanced_member_creation_with_admission_fee()
+        self.test_member_update_with_admission_fee_logic()
+        self.test_custom_join_dates_backdating()
+        self.test_date_validation_for_backdating()
+        
         print("\n💰 PAYMENT MANAGEMENT TESTS")
         print("-" * 40)
         self.test_razorpay_integration()
