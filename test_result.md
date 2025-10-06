@@ -309,13 +309,14 @@
 
 ## test_plan:
   current_focus:
-    - "Backend Testing Complete"
+    - "NEW FEATURES TESTING COMPLETE - Admission Fee & Backdating"
+    - "Backend Testing Complete with New Features"
     - "Frontend Integration Testing"
   stuck_tasks: 
     - "Razorpay Order Creation (Authentication Issues)"
     - "Receipt Template Listing (MongoDB ObjectId Serialization)"
   test_all: true
-  test_priority: "backend_complete"
+  test_priority: "new_features_complete"
 
 ## agent_communication:
     - agent: "main"
