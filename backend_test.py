@@ -427,7 +427,7 @@ class IronParadiseGymAPITester:
             
         payment_data = {
             "member_id": self.created_member_id,
-            "amount": 3500.0,
+            "amount": 2000.0,
             "payment_method": "upi",
             "description": "Monthly membership fee + admission fee",
             "transaction_id": "UPI_TXN_001_RAJESH"
