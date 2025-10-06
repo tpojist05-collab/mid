@@ -45,7 +45,7 @@ function App() {
         <header className="mb-8">
           <div className="text-center mb-6">
             <h1 className="text-4xl font-bold text-slate-800 mb-2">
-              💪 FitTrack Gym Management
+              💪 Iron Paradise Gym
             </h1>
             <p className="text-slate-600 text-lg">
               Complete membership tracking and management system
