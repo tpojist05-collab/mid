@@ -430,6 +430,35 @@ const MemberManagement = () => {
         </Dialog>
       </div>
 
+      {/* View Mode Tabs */}
+      <Card className="glass border-0">
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap gap-2 mb-4">
+            <Button
+              variant={viewMode === 'all' ? 'default' : 'outline'}
+              onClick={() => setViewMode('all')}
+              className={viewMode === 'all' ? 'bg-gradient-to-r from-blue-600 to-indigo-600' : ''}
+            >
+              All Members ({members.length})
+            </Button>
+            <Button
+              variant={viewMode === 'active' ? 'default' : 'outline'}
+              onClick={() => setViewMode('active')}
+              className={viewMode === 'active' ? 'bg-gradient-to-r from-green-600 to-emerald-600' : ''}
+            >
+              Active ({members.filter(m => m.member_status === 'active' && m.current_payment_status === 'paid').length})
+            </Button>
+            <Button
+              variant={viewMode === 'inactive' ? 'default' : 'outline'}
+              onClick={() => setViewMode('inactive')}
+              className={viewMode === 'inactive' ? 'bg-gradient-to-r from-gray-600 to-slate-600' : ''}
+            >
+              Inactive ({members.filter(m => m.member_status !== 'active' || m.current_payment_status !== 'paid').length})
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Filters */}
       <Card className="glass border-0">
         <CardContent className="pt-6">
@@ -449,9 +478,12 @@ const MemberManagement = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Members</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                  <SelectItem value="frozen">Frozen</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="pending">Pending Payment</SelectItem>
                   <SelectItem value="expired">Expired</SelectItem>
                 </SelectContent>
               </Select>
