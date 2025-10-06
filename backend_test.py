@@ -41,10 +41,14 @@ class IronParadiseGymAPITester:
             print(f"    Response: {response_data}")
         print()
 
-    def make_request(self, method: str, endpoint: str, data: Dict = None, expected_status: int = 200) -> tuple:
+    def make_request(self, method: str, endpoint: str, data: Dict = None, expected_status: int = 200, auth_required: bool = False) -> tuple:
         """Make HTTP request and return success status and response"""
         url = f"{self.api_url}/{endpoint}"
         headers = {'Content-Type': 'application/json'}
+        
+        # Add authorization header if auth is required and token is available
+        if auth_required and self.auth_token:
+            headers['Authorization'] = f"Bearer {self.auth_token}"
         
         try:
             if method == 'GET':
@@ -53,6 +57,8 @@ class IronParadiseGymAPITester:
                 response = requests.post(url, json=data, headers=headers, timeout=10)
             elif method == 'PUT':
                 response = requests.put(url, json=data, headers=headers, timeout=10)
+            elif method == 'DELETE':
+                response = requests.delete(url, headers=headers, timeout=10)
             else:
                 return False, {"error": f"Unsupported method: {method}"}
 
