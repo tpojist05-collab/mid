@@ -224,8 +224,8 @@ const Dashboard = ({ setCurrentPage }) => {
               data-testid="record-payment-btn"
               onClick={() => {
                 // Navigate to payments page and trigger add modal
-                if (window.setCurrentPage) {
-                  window.setCurrentPage('payments');
+                if (setCurrentPage) {
+                  setCurrentPage('payments');
                   setTimeout(() => {
                     const event = new CustomEvent('openPaymentModal');
                     window.dispatchEvent(event);
