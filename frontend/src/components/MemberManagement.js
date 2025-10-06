@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Textarea } from './ui/textarea';
 import { apiClient } from '../App';
 import { toast } from 'sonner';
+import { useAuth } from '../contexts/AuthContext';
 
 const MemberManagement = () => {
   const [members, setMembers] = useState([]);
