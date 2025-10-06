@@ -491,6 +491,10 @@ const MemberManagement = () => {
                   >
                     📱 Send Reminder
                   </Button>
+                  <MemberStartDateManager
+                    member={member}
+                    onUpdate={fetchMembers}
+                  />
                   <Button 
                     variant="outline" 
                     size="sm" 
