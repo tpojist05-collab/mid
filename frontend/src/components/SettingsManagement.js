@@ -109,6 +109,22 @@ const SettingsManagement = () => {
     }).format(amount);
   };
 
+  const updateAdmissionFee = async () => {
+    try {
+      setAdmissionFeeData(prev => ({ ...prev, saving: true }));
+      await apiClient.put('/settings/admission-fee', {
+        amount: admissionFeeData.amount
+      });
+      toast.success('Admission fee updated successfully');
+      fetchAdmissionFee();
+    } catch (error) {
+      console.error('Error updating admission fee:', error);
+      toast.error('Failed to update admission fee');
+    } finally {
+      setAdmissionFeeData(prev => ({ ...prev, saving: false }));
+    }
+  };
+
   if (!isAdmin()) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
