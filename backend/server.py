@@ -296,6 +296,80 @@ def parse_from_mongo(item: dict) -> dict:
 async def root():
     return {"message": "Iron Paradise Gym Management API"}
 
+# Authentication Routes
+@api_router.post("/auth/register", response_model=User)
+async def register_user(user_data: UserCreate, current_admin: User = Depends(require_admin_role)):
+    try:
+        # Check if username already exists
+        existing_user = await db.users.find_one({"username": user_data.username})
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Username already registered")
+        
+        # Check if email already exists
+        existing_email = await db.users.find_one({"email": user_data.email})
+        if existing_email:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        # Hash password and create user
+        hashed_password = get_password_hash(user_data.password)
+        user = User(
+            **user_data.dict(exclude={'password'})
+        )
+        
+        user_dict = prepare_for_mongo(user.dict())
+        user_dict['hashed_password'] = hashed_password
+        
+        await db.users.insert_one(user_dict)
+        return user
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/auth/login", response_model=Token)
+async def login_user(form_data: OAuth2PasswordRequestForm = Depends()):
+    try:
+        user = await db.users.find_one({"username": form_data.username})
+        if not user or not verify_password(form_data.password, user.get('hashed_password')):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        if not user.get('is_active', True):
+            raise HTTPException(status_code=400, detail="Inactive user")
+        
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user["username"]}, expires_delta=access_token_expires
+        )
+        
+        user_data = User(**parse_from_mongo(user))
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": user_data.dict(exclude={'hashed_password'})
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/auth/me", response_model=User)
+async def get_current_user_info(current_user: User = Depends(get_current_active_user)):
+    return current_user
+
+@api_router.get("/users", response_model=List[User])
+async def get_all_users(current_admin: User = Depends(require_admin_role)):
+    try:
+        users = await db.users.find().to_list(1000)
+        return [User(**parse_from_mongo(user)) for user in users]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Member Management Routes
 @api_router.post("/members", response_model=Member)
 async def create_member(member_data: MemberCreate):
