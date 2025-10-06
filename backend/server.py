@@ -210,6 +210,7 @@ class SettingsUpdate(BaseModel):
     gym_email: Optional[str] = None
     gym_logo_url: Optional[str] = None
     membership_plans: Optional[dict] = None
+    admission_fee: Optional[float] = None
     terms_conditions: Optional[str] = None
 
 # Advanced Role & Permission Models
