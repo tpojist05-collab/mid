@@ -41,7 +41,9 @@ SECRET_KEY = os.environ['JWT_SECRET_KEY']
 ALGORITHM = os.environ['JWT_ALGORITHM']
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ['ACCESS_TOKEN_EXPIRE_MINUTES'])
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Using SHA256 with salt for password hashing (simpler approach)
+def create_salt():
+    return secrets.token_hex(32)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
 # Create the main app without a prefix
