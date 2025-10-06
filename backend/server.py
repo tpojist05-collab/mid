@@ -1259,6 +1259,127 @@ async def update_gym_settings(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.put("/settings/admission-fee")
+async def update_admission_fee(
+    admission_fee_data: dict,
+    current_admin: User = Depends(require_admin_role)
+):
+    """Update admission fee for monthly membership (admin only)"""
+    try:
+        admission_fee = admission_fee_data.get("amount")
+        if admission_fee is None or admission_fee < 0:
+            raise HTTPException(status_code=400, detail="Invalid admission fee amount")
+        
+        # Update or create admission fee setting
+        await db.gym_settings.update_one(
+            {"setting_name": "admission_fee"},
+            {
+                "$set": {
+                    "setting_name": "admission_fee",
+                    "amount": float(admission_fee),
+                    "updated_at": datetime.now(timezone.utc),
+                    "updated_by": current_admin.id
+                }
+            },
+            upsert=True
+        )
+        
+        # Also update main settings document
+        await db.settings.update_one(
+            {"id": "gym_settings"},
+            {"$set": {"admission_fee": float(admission_fee)}},
+            upsert=True
+        )
+        
+        # Send notification
+        await send_system_notification(
+            "Admission Fee Updated",
+            f"Monthly membership admission fee updated to ₹{admission_fee} by {current_admin.full_name}",
+            "info"
+        )
+        
+        return {
+            "message": "Admission fee updated successfully",
+            "admission_fee": float(admission_fee)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/settings/admission-fee")
+async def get_admission_fee_setting(current_user: User = Depends(get_current_active_user)):
+    """Get current admission fee for monthly membership"""
+    try:
+        admission_fee = await get_admission_fee()
+        return {
+            "amount": admission_fee,
+            "applies_to": "monthly_membership_only",
+            "description": "One-time admission fee applicable only for monthly membership plans"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/settings/membership-rates")
+async def update_membership_rates(
+    rates_data: dict,
+    current_admin: User = Depends(require_admin_role)
+):
+    """Update membership rates (admin only)"""
+    try:
+        rates = rates_data.get("rates", {})
+        
+        # Validate rates
+        required_types = ["MONTHLY", "QUARTERLY", "SIX_MONTHLY"]
+        for rate_type in required_types:
+            if rate_type not in rates or rates[rate_type] < 0:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Invalid or missing rate for {rate_type}"
+                )
+        
+        # Update rates setting
+        await db.gym_settings.update_one(
+            {"setting_name": "membership_rates"},
+            {
+                "$set": {
+                    "setting_name": "membership_rates",
+                    "rates": rates,
+                    "updated_at": datetime.now(timezone.utc),
+                    "updated_by": current_admin.id
+                }
+            },
+            upsert=True
+        )
+        
+        # Also update main settings document
+        await db.settings.update_one(
+            {"id": "gym_settings"},
+            {"$set": {"membership_rates": {
+                "monthly": rates["MONTHLY"],
+                "quarterly": rates["QUARTERLY"], 
+                "six_monthly": rates["SIX_MONTHLY"]
+            }}},
+            upsert=True
+        )
+        
+        # Send notification
+        await send_system_notification(
+            "Membership Rates Updated",
+            f"Membership pricing updated by {current_admin.full_name}",
+            "info"
+        )
+        
+        return {
+            "message": "Membership rates updated successfully",
+            "rates": rates
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 # Real-time Notification System
 async def send_system_notification(title: str, message: str, type: str, user_id: str = None):
     """Send system notification"""
