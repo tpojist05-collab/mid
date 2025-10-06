@@ -303,7 +303,17 @@ async def get_expiring_members(days: int = 7):
         if not members:
             return []
             
-        return [Member(**parse_from_mongo(member)) for member in members]
+        # Parse members carefully
+        parsed_members = []
+        for member in members:
+            try:
+                parsed_member = parse_from_mongo(member)
+                parsed_members.append(Member(**parsed_member))
+            except Exception as member_error:
+                logger.error(f"Error parsing member {member.get('id', 'unknown')}: {member_error}")
+                continue
+                
+        return parsed_members
     except Exception as e:
         logger.error(f"Error fetching expiring members: {e}")
         return []  # Return empty list instead of raising exception
