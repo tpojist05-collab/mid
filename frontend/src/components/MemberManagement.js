@@ -165,6 +165,16 @@ const MemberManagement = () => {
     const isExpired = new Date(member.membership_end) < new Date();
     const isExpiringSoon = new Date(member.membership_end) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     
+    // Check member status first
+    if (member.member_status === 'suspended') {
+      return <Badge className="bg-red-100 text-red-800 border-red-200">Suspended</Badge>;
+    } else if (member.member_status === 'frozen') {
+      return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Frozen</Badge>;
+    } else if (member.member_status === 'inactive') {
+      return <Badge className="bg-gray-100 text-gray-800 border-gray-200">Inactive</Badge>;
+    }
+    
+    // Then check payment and expiry status
     if (member.current_payment_status === 'paid' && !isExpired) {
       return <Badge className="status-paid">Active</Badge>;
     } else if (member.current_payment_status === 'pending') {
@@ -175,6 +185,43 @@ const MemberManagement = () => {
       return <Badge variant="outline" className="border-orange-300 text-orange-600">Expiring Soon</Badge>;
     }
     return <Badge variant="secondary">Unknown</Badge>;
+  };
+
+  const getStatusActions = (member) => {
+    return (
+      <div className="flex flex-wrap gap-1">
+        {member.member_status !== 'active' && (
+          <Button
+            size="xs"
+            variant="outline"
+            onClick={() => updateMemberStatus(member, 'active')}
+            className="text-green-600 border-green-200 hover:bg-green-50"
+          >
+            Activate
+          </Button>
+        )}
+        {member.member_status !== 'suspended' && (
+          <Button
+            size="xs"
+            variant="outline"
+            onClick={() => updateMemberStatus(member, 'suspended')}
+            className="text-red-600 border-red-200 hover:bg-red-50"
+          >
+            Suspend
+          </Button>
+        )}
+        {member.member_status !== 'frozen' && (
+          <Button
+            size="xs"
+            variant="outline"
+            onClick={() => updateMemberStatus(member, 'frozen')}
+            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+          >
+            Freeze
+          </Button>
+        )}
+      </div>
+    );
   };
 
   const formatCurrency = (amount) => {
