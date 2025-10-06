@@ -298,7 +298,8 @@ const SettingsManagement = () => {
             <ul className="text-sm text-slate-600 space-y-1">
               <li>• Longer plans typically offer better value to encourage commitment</li>
               <li>• Consider seasonal discounts for annual memberships</li>
-              <li>• Admission fee is always ₹1,500 (configured separately)</li>
+              <li>• Set admission fee separately - it applies to all new members</li>
+              <li>• Total member cost = Admission Fee + Selected Membership Plan</li>
             </ul>
           </div>
         </CardContent>
