@@ -531,30 +531,63 @@ const MemberManagement = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-slate-600">Membership</p>
-                  <p className="font-medium text-slate-800">
-                    {getMembershipLabel(member.membership_type)}
-                  </p>
+              <div className="space-y-3">
+                {/* Membership & Fee Info */}
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-slate-600">Membership Plan</p>
+                    <p className="font-medium text-slate-800">
+                      {getMembershipLabel(member.membership_type)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-slate-600">Plan Fee</p>
+                    <p className="font-medium text-slate-800">
+                      {formatCurrency(member.monthly_fee_amount)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-slate-600">Admission Fee</p>
+                    <p className="font-medium text-slate-800">
+                      {formatCurrency(member.admission_fee_amount || 0)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-slate-600">Total Due</p>
+                    <p className="font-bold text-lg text-green-600">
+                      {formatCurrency(member.total_amount_due)}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-slate-600">Monthly Fee</p>
-                  <p className="font-medium text-slate-800">
-                    {formatCurrency(member.monthly_fee_amount)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-slate-600">Join Date</p>
-                  <p className="font-medium text-slate-800">
-                    {formatDate(member.join_date)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-slate-600">Expires On</p>
-                  <p className="font-medium text-slate-800">
-                    {formatDate(member.membership_end)}
-                  </p>
+
+                {/* Date Information */}
+                <div className="border-t pt-3">
+                  <h5 className="font-medium text-slate-800 mb-2">📅 Important Dates</h5>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-slate-600">Date of Joining</p>
+                      <p className="font-medium text-slate-800">
+                        {formatDate(member.join_date)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-slate-600">Subscription Expires</p>
+                      <p className="font-medium text-red-600">
+                        {formatDate(member.membership_end)}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Days remaining */}
+                  <div className="mt-2 text-xs text-slate-500">
+                    {(() => {
+                      const daysLeft = Math.ceil((new Date(member.membership_end) - new Date()) / (1000 * 60 * 60 * 24));
+                      if (daysLeft < 0) return `⚠️ Expired ${Math.abs(daysLeft)} days ago`;
+                      if (daysLeft === 0) return `⚠️ Expires today`;
+                      if (daysLeft <= 7) return `⚠️ Expires in ${daysLeft} days`;
+                      return `✅ ${daysLeft} days remaining`;
+                    })()}
+                  </div>
                 </div>
               </div>
               
