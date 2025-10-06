@@ -1,0 +1,366 @@
+#!/usr/bin/env python3
+
+import requests
+import sys
+import json
+from datetime import datetime, timezone
+from typing import Dict, Any, List
+
+class GymMembershipAPITester:
+    def __init__(self, base_url="https://gymtracker-50.preview.emergentagent.com"):
+        self.base_url = base_url
+        self.api_url = f"{base_url}/api"
+        self.tests_run = 0
+        self.tests_passed = 0
+        self.test_results = []
+        self.created_member_id = None
+        self.created_payment_id = None
+
+    def log_test(self, name: str, success: bool, details: str = "", response_data: Any = None):
+        """Log test result"""
+        self.tests_run += 1
+        if success:
+            self.tests_passed += 1
+            
+        result = {
+            "test_name": name,
+            "success": success,
+            "details": details,
+            "response_data": response_data
+        }
+        self.test_results.append(result)
+        
+        status = "✅ PASS" if success else "❌ FAIL"
+        print(f"{status} - {name}")
+        if details:
+            print(f"    Details: {details}")
+        if not success and response_data:
+            print(f"    Response: {response_data}")
+        print()
+
+    def make_request(self, method: str, endpoint: str, data: Dict = None, expected_status: int = 200) -> tuple:
+        """Make HTTP request and return success status and response"""
+        url = f"{self.api_url}/{endpoint}"
+        headers = {'Content-Type': 'application/json'}
+        
+        try:
+            if method == 'GET':
+                response = requests.get(url, headers=headers, timeout=10)
+            elif method == 'POST':
+                response = requests.post(url, json=data, headers=headers, timeout=10)
+            elif method == 'PUT':
+                response = requests.put(url, json=data, headers=headers, timeout=10)
+            else:
+                return False, {"error": f"Unsupported method: {method}"}
+
+            success = response.status_code == expected_status
+            
+            try:
+                response_data = response.json()
+            except:
+                response_data = {"status_code": response.status_code, "text": response.text}
+                
+            return success, response_data
+            
+        except requests.exceptions.RequestException as e:
+            return False, {"error": str(e)}
+
+    def test_root_endpoint(self):
+        """Test the root API endpoint"""
+        success, response = self.make_request('GET', '')
+        expected_message = "Gym Membership Tracker API"
+        
+        if success and response.get('message') == expected_message:
+            self.log_test("Root Endpoint", True, "API is accessible and responding correctly")
+        else:
+            self.log_test("Root Endpoint", False, f"Expected message '{expected_message}', got: {response}")
+
+    def test_create_member(self):
+        """Test creating a new member"""
+        member_data = {
+            "name": "Test Member",
+            "email": "test@example.com",
+            "phone": "+91 9876543210",
+            "address": "123 Test Street, Test City, Test State 123456",
+            "emergency_contact": {
+                "name": "Emergency Contact",
+                "phone": "+91 9876543211",
+                "relationship": "Spouse"
+            },
+            "membership_type": "monthly"
+        }
+        
+        success, response = self.make_request('POST', 'members', member_data, 200)
+        
+        if success:
+            # Validate response structure
+            required_fields = ['id', 'name', 'email', 'phone', 'membership_type', 'total_amount_due']
+            missing_fields = [field for field in required_fields if field not in response]
+            
+            if not missing_fields:
+                self.created_member_id = response['id']
+                expected_total = 3500.0  # 2000 + 1500 admission fee
+                actual_total = response.get('total_amount_due', 0)
+                
+                if actual_total == expected_total:
+                    self.log_test("Create Member", True, f"Member created with ID: {self.created_member_id}")
+                else:
+                    self.log_test("Create Member", False, f"Expected total_amount_due: {expected_total}, got: {actual_total}")
+            else:
+                self.log_test("Create Member", False, f"Missing required fields: {missing_fields}", response)
+        else:
+            self.log_test("Create Member", False, "Failed to create member", response)
+
+    def test_get_members(self):
+        """Test getting all members"""
+        success, response = self.make_request('GET', 'members')
+        
+        if success:
+            if isinstance(response, list):
+                member_count = len(response)
+                self.log_test("Get All Members", True, f"Retrieved {member_count} members")
+                
+                # Check if our created member is in the list
+                if self.created_member_id:
+                    member_found = any(member.get('id') == self.created_member_id for member in response)
+                    if member_found:
+                        self.log_test("Verify Created Member in List", True, "Created member found in members list")
+                    else:
+                        self.log_test("Verify Created Member in List", False, "Created member not found in members list")
+            else:
+                self.log_test("Get All Members", False, "Expected list response", response)
+        else:
+            self.log_test("Get All Members", False, "Failed to get members", response)
+
+    def test_get_specific_member(self):
+        """Test getting a specific member by ID"""
+        if not self.created_member_id:
+            self.log_test("Get Specific Member", False, "No member ID available for testing")
+            return
+            
+        success, response = self.make_request('GET', f'members/{self.created_member_id}')
+        
+        if success:
+            if response.get('id') == self.created_member_id:
+                self.log_test("Get Specific Member", True, f"Retrieved member: {response.get('name')}")
+            else:
+                self.log_test("Get Specific Member", False, "Member ID mismatch", response)
+        else:
+            self.log_test("Get Specific Member", False, "Failed to get specific member", response)
+
+    def test_update_member(self):
+        """Test updating a member"""
+        if not self.created_member_id:
+            self.log_test("Update Member", False, "No member ID available for testing")
+            return
+            
+        update_data = {
+            "name": "Updated Test Member",
+            "email": "updated@example.com",
+            "phone": "+91 9876543210",
+            "address": "456 Updated Street, Updated City, Updated State 654321",
+            "emergency_contact": {
+                "name": "Updated Emergency Contact",
+                "phone": "+91 9876543211",
+                "relationship": "Parent"
+            },
+            "membership_type": "quarterly"
+        }
+        
+        success, response = self.make_request('PUT', f'members/{self.created_member_id}', update_data)
+        
+        if success:
+            if response.get('name') == "Updated Test Member" and response.get('membership_type') == "quarterly":
+                expected_total = 7000.0  # 5500 + 1500 admission fee
+                actual_total = response.get('total_amount_due', 0)
+                if actual_total == expected_total:
+                    self.log_test("Update Member", True, "Member updated successfully with correct pricing")
+                else:
+                    self.log_test("Update Member", False, f"Expected total_amount_due: {expected_total}, got: {actual_total}")
+            else:
+                self.log_test("Update Member", False, "Member update data mismatch", response)
+        else:
+            self.log_test("Update Member", False, "Failed to update member", response)
+
+    def test_record_payment(self):
+        """Test recording a payment"""
+        if not self.created_member_id:
+            self.log_test("Record Payment", False, "No member ID available for testing")
+            return
+            
+        payment_data = {
+            "member_id": self.created_member_id,
+            "amount": 3500.0,
+            "payment_method": "cash",
+            "description": "Monthly membership fee + admission fee",
+            "transaction_id": "TEST_TXN_001"
+        }
+        
+        success, response = self.make_request('POST', 'payments', payment_data)
+        
+        if success:
+            required_fields = ['id', 'member_id', 'amount', 'payment_method', 'description']
+            missing_fields = [field for field in required_fields if field not in response]
+            
+            if not missing_fields:
+                self.created_payment_id = response['id']
+                self.log_test("Record Payment", True, f"Payment recorded with ID: {self.created_payment_id}")
+            else:
+                self.log_test("Record Payment", False, f"Missing required fields: {missing_fields}", response)
+        else:
+            self.log_test("Record Payment", False, "Failed to record payment", response)
+
+    def test_get_all_payments(self):
+        """Test getting all payments"""
+        success, response = self.make_request('GET', 'payments')
+        
+        if success:
+            if isinstance(response, list):
+                payment_count = len(response)
+                self.log_test("Get All Payments", True, f"Retrieved {payment_count} payments")
+                
+                # Check if our created payment is in the list
+                if self.created_payment_id:
+                    payment_found = any(payment.get('id') == self.created_payment_id for payment in response)
+                    if payment_found:
+                        self.log_test("Verify Created Payment in List", True, "Created payment found in payments list")
+                    else:
+                        self.log_test("Verify Created Payment in List", False, "Created payment not found in payments list")
+            else:
+                self.log_test("Get All Payments", False, "Expected list response", response)
+        else:
+            self.log_test("Get All Payments", False, "Failed to get payments", response)
+
+    def test_get_member_payments(self):
+        """Test getting payments for a specific member"""
+        if not self.created_member_id:
+            self.log_test("Get Member Payments", False, "No member ID available for testing")
+            return
+            
+        success, response = self.make_request('GET', f'payments/{self.created_member_id}')
+        
+        if success:
+            if isinstance(response, list):
+                payment_count = len(response)
+                self.log_test("Get Member Payments", True, f"Retrieved {payment_count} payments for member")
+            else:
+                self.log_test("Get Member Payments", False, "Expected list response", response)
+        else:
+            self.log_test("Get Member Payments", False, "Failed to get member payments", response)
+
+    def test_dashboard_stats(self):
+        """Test dashboard statistics endpoint"""
+        success, response = self.make_request('GET', 'dashboard/stats')
+        
+        if success:
+            required_fields = ['total_members', 'active_members', 'pending_members', 'monthly_revenue']
+            missing_fields = [field for field in required_fields if field not in response]
+            
+            if not missing_fields:
+                stats_summary = {
+                    'total_members': response.get('total_members', 0),
+                    'active_members': response.get('active_members', 0),
+                    'pending_members': response.get('pending_members', 0),
+                    'monthly_revenue': response.get('monthly_revenue', 0)
+                }
+                self.log_test("Dashboard Stats", True, f"Stats: {stats_summary}")
+            else:
+                self.log_test("Dashboard Stats", False, f"Missing required fields: {missing_fields}", response)
+        else:
+            self.log_test("Dashboard Stats", False, "Failed to get dashboard stats", response)
+
+    def test_expiring_members(self):
+        """Test getting expiring members"""
+        success, response = self.make_request('GET', 'members/expiring-soon?days=7')
+        
+        if success:
+            if isinstance(response, list):
+                expiring_count = len(response)
+                self.log_test("Get Expiring Members", True, f"Retrieved {expiring_count} expiring members")
+            else:
+                self.log_test("Get Expiring Members", False, "Expected list response", response)
+        else:
+            self.log_test("Get Expiring Members", False, "Failed to get expiring members", response)
+
+    def test_membership_pricing(self):
+        """Test membership pricing calculations"""
+        pricing_tests = [
+            {"type": "monthly", "expected_fee": 2000.0, "expected_total": 3500.0},
+            {"type": "quarterly", "expected_fee": 5500.0, "expected_total": 7000.0},
+            {"type": "six_monthly", "expected_fee": 10500.0, "expected_total": 12000.0}
+        ]
+        
+        all_passed = True
+        for test in pricing_tests:
+            member_data = {
+                "name": f"Pricing Test {test['type']}",
+                "email": f"pricing_{test['type']}@example.com",
+                "phone": "+91 9876543299",
+                "address": "Test Address",
+                "emergency_contact": {
+                    "name": "Test Contact",
+                    "phone": "+91 9876543298",
+                    "relationship": "Friend"
+                },
+                "membership_type": test['type']
+            }
+            
+            success, response = self.make_request('POST', 'members', member_data)
+            
+            if success:
+                actual_fee = response.get('monthly_fee_amount', 0)
+                actual_total = response.get('total_amount_due', 0)
+                
+                if actual_fee == test['expected_fee'] and actual_total == test['expected_total']:
+                    continue
+                else:
+                    all_passed = False
+                    break
+            else:
+                all_passed = False
+                break
+        
+        if all_passed:
+            self.log_test("Membership Pricing", True, "All membership types have correct pricing")
+        else:
+            self.log_test("Membership Pricing", False, "Pricing calculation errors found")
+
+    def run_all_tests(self):
+        """Run all API tests"""
+        print("🏋️ Starting Gym Membership API Tests")
+        print("=" * 50)
+        
+        # Test sequence
+        self.test_root_endpoint()
+        self.test_create_member()
+        self.test_get_members()
+        self.test_get_specific_member()
+        self.test_update_member()
+        self.test_record_payment()
+        self.test_get_all_payments()
+        self.test_get_member_payments()
+        self.test_dashboard_stats()
+        self.test_expiring_members()
+        self.test_membership_pricing()
+        
+        # Print summary
+        print("=" * 50)
+        print(f"📊 Test Summary: {self.tests_passed}/{self.tests_run} tests passed")
+        
+        if self.tests_passed == self.tests_run:
+            print("🎉 All tests passed!")
+            return 0
+        else:
+            print("❌ Some tests failed!")
+            failed_tests = [test for test in self.test_results if not test['success']]
+            print("\nFailed tests:")
+            for test in failed_tests:
+                print(f"  - {test['test_name']}: {test['details']}")
+            return 1
+
+def main():
+    tester = GymMembershipAPITester()
+    return tester.run_all_tests()
+
+if __name__ == "__main__":
+    sys.exit(main())
