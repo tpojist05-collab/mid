@@ -1,13 +1,18 @@
 import React from 'react';
 import { Button } from './ui/button';
 
-const Navigation = ({ currentPage, setCurrentPage }) => {
+const Navigation = ({ currentPage, setCurrentPage, isAdmin }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: '📊' },
     { id: 'members', label: 'Members', icon: '👥' },
     { id: 'payments', label: 'Payments', icon: '💳' },
     { id: 'reminders', label: 'Reminders', icon: '📱' }
   ];
+
+  // Add settings for admin users
+  if (isAdmin) {
+    navItems.push({ id: 'settings', label: 'Settings', icon: '⚙️' });
+  }
 
   return (
     <nav className="flex justify-center mb-8">
