@@ -35,6 +35,14 @@ db = client[os.environ['DB_NAME']]
 # Razorpay client
 razorpay_client = razorpay.Client(auth=(os.environ['RAZORPAY_KEY_ID'], os.environ['RAZORPAY_KEY_SECRET']))
 
+# Authentication setup
+SECRET_KEY = os.environ['JWT_SECRET_KEY']
+ALGORITHM = os.environ['JWT_ALGORITHM']
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ['ACCESS_TOKEN_EXPIRE_MINUTES'])
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
+
 # Create the main app without a prefix
 app = FastAPI(title="Iron Paradise Gym Management System")
 
