@@ -303,7 +303,11 @@ class IronParadiseGymAPITester:
 
     def test_get_members(self):
         """Test getting all members"""
-        success, response = self.make_request('GET', 'members')
+        if not self.auth_token:
+            self.log_test("Get All Members", False, "No auth token available for testing")
+            return
+            
+        success, response = self.make_request('GET', 'members', auth_required=True)
         
         if success:
             if isinstance(response, list):
