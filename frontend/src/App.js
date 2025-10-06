@@ -81,16 +81,27 @@ const AppContent = () => {
               </p>
             </div>
             
-            {/* User Info & Logout */}
+            {/* User Info & Actions */}
             <div className="flex items-center gap-3">
+              {/* Notifications */}
+              <NotificationCenter />
+              
               <div className="text-right">
                 <div className="font-medium text-slate-800">{user.full_name}</div>
                 <div className="flex items-center gap-2">
-                  <Badge className={user.role === 'admin' ? 'bg-purple-100 text-purple-800 border-purple-200' : 'bg-blue-100 text-blue-800 border-blue-200'}>
-                    {user.role === 'admin' ? '👑 Admin' : '👤 Staff'}
+                  <Badge className={
+                    user.role === 'admin' ? 'bg-red-100 text-red-800 border-red-200' :
+                    user.role === 'manager' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                    user.role === 'trainer' ? 'bg-green-100 text-green-800 border-green-200' :
+                    'bg-purple-100 text-purple-800 border-purple-200'
+                  }>
+                    {user.role === 'admin' ? '👑 Admin' : 
+                     user.role === 'manager' ? '💼 Manager' :
+                     user.role === 'trainer' ? '💪 Trainer' : '🏢 Staff'}
                   </Badge>
                 </div>
               </div>
+              
               <Button 
                 variant="outline" 
                 size="sm" 
