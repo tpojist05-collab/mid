@@ -1512,10 +1512,10 @@ async def initialize_receipt_templates():
 
 # Receipt Management API
 @app.get("/api/receipts/templates", response_model=List[dict])
-async def get_receipt_templates(current_user: dict = Depends(get_current_user)):
+async def get_receipt_templates(current_user: User = Depends(get_current_active_user)):
     """Get all receipt templates"""
     try:
-        if current_user["role"] != "admin":
+        if current_user.role != UserRole.ADMIN:
             raise HTTPException(status_code=403, detail="Admin access required")
         
         templates = await db.receipt_templates.find().to_list(length=None)
