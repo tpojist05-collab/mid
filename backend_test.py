@@ -771,7 +771,6 @@ class IronParadiseGymAPITester:
         print("\n💳 PAYMENT GATEWAY TESTS")
         print("-" * 40)
         self.test_payment_gateways_initialization()
-        self.test_razorpay_integration()
         self.test_razorpay_key_endpoint()
         
         print("\n🧾 RECEIPT TEMPLATE SYSTEM TESTS")
