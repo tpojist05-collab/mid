@@ -908,15 +908,18 @@ async def update_member(
         admission_fee = 0.0
         existing_type = existing_member.get('membership_type', '')
         if member_update.membership_type == MembershipType.MONTHLY:
-            if existing_type != 'MONTHLY':
+            if existing_type != 'monthly':
                 # Only charge admission fee when switching TO monthly from another type
                 admission_fee = await get_admission_fee()
+            else:
+                # Keep existing admission fee for monthly members
+                admission_fee = existing_member.get('admission_fee_amount', 0.0)
         
         # If switching FROM monthly to another type, remove admission fee
-        elif existing_type == 'MONTHLY' and member_update.membership_type != MembershipType.MONTHLY:
+        elif existing_type == 'monthly' and member_update.membership_type != MembershipType.MONTHLY:
             admission_fee = 0.0
         else:
-            # Keep existing admission fee
+            # Keep existing admission fee for other cases
             admission_fee = existing_member.get('admission_fee_amount', 0.0)
         
         update_data['admission_fee_amount'] = admission_fee
