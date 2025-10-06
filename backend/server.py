@@ -169,7 +169,7 @@ def parse_from_mongo(item: dict) -> dict:
 # API Routes
 @api_router.get("/")
 async def root():
-    return {"message": "Gym Membership Tracker API"}
+    return {"message": "Iron Paradise Gym Management API"}
 
 # Member Management Routes
 @api_router.post("/members", response_model=Member)
