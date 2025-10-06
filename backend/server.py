@@ -537,6 +537,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
+async def startup_event():
+    """Initialize services on startup"""
+    global reminder_service_instance
+    try:
+        # Initialize reminder service
+        reminder_service_instance = init_reminder_service(client, os.environ['DB_NAME'])
+        reminder_service_instance.start()
+        logger.info("Reminder service started successfully")
+    except Exception as e:
+        logger.error(f"Failed to start reminder service: {e}")
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    """Cleanup on shutdown"""
+    global reminder_service_instance
+    try:
+        if reminder_service_instance:
+            reminder_service_instance.stop()
+            logger.info("Reminder service stopped")
+    except Exception as e:
+        logger.error(f"Error stopping reminder service: {e}")
+    
     client.close()
