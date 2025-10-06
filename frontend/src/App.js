@@ -8,6 +8,7 @@ import PaymentManagement from "./components/PaymentManagement";
 import ReminderManagement from "./components/ReminderManagement";
 import SettingsManagement from "./components/SettingsManagement";
 import UserManagement from "./components/UserManagement";
+import ReceiptManagement from "./components/ReceiptManagement";
 import LoginForm from "./components/LoginForm";
 import Navigation from "./components/Navigation";
 import NotificationCenter from "./components/NotificationCenter";
