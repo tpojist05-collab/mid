@@ -328,11 +328,11 @@ class IronParadiseGymAPITester:
 
     def test_get_specific_member(self):
         """Test getting a specific member by ID"""
-        if not self.created_member_id:
-            self.log_test("Get Specific Member", False, "No member ID available for testing")
+        if not self.created_member_id or not self.auth_token:
+            self.log_test("Get Specific Member", False, "No member ID or auth token available for testing")
             return
             
-        success, response = self.make_request('GET', f'members/{self.created_member_id}')
+        success, response = self.make_request('GET', f'members/{self.created_member_id}', auth_required=True)
         
         if success:
             if response.get('id') == self.created_member_id:
