@@ -107,6 +107,7 @@ class Member(BaseModel):
     membership_end: datetime
     admission_fee_paid: bool = False
     current_payment_status: PaymentStatus = PaymentStatus.PENDING
+    member_status: MemberStatus = MemberStatus.ACTIVE
     total_amount_due: float
     admission_fee_amount: float = 1500.0
     monthly_fee_amount: float
