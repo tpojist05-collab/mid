@@ -11,6 +11,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from enum import Enum
 import razorpay
+from reminder_service import init_reminder_service, get_reminder_service
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
