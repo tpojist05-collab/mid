@@ -1178,28 +1178,92 @@ async def startup_event():
     """Initialize services on startup"""
     global reminder_service_instance
     try:
-        # Create default admin user if no users exist
-        user_count = await db.users.count_documents({})
-        if user_count == 0:
+        # Initialize default permissions
+        await initialize_default_permissions()
+        
+        # Initialize default payment gateways
+        await initialize_default_payment_gateways()
+        
+        # Create default admin user ONLY if no admin exists
+        admin_count = await db.users.count_documents({"role": "admin"})
+        if admin_count == 0:
+            # Create secure admin setup
             admin_user = User(
-                username="admin",
-                email="admin@ironparadisegym.com",
-                full_name="Administrator",
+                username="gym_admin",
+                email="admin@ironparadise.com", 
+                full_name="Gym Administrator",
                 role=UserRole.ADMIN
             )
             
             user_dict = prepare_for_mongo(admin_user.dict())
-            user_dict['hashed_password'] = get_password_hash("admin123"[:72])
+            # Use a secure temporary password - admin should change this immediately
+            user_dict['hashed_password'] = get_password_hash("IronParadise@2024")
             
             await db.users.insert_one(user_dict)
-            logger.info("Default admin user created: username='admin', password='admin123'")
+            await update_user_permissions(admin_user.id)
+            
+            logger.info("🔐 SECURE ADMIN CREATED:")
+            logger.info("Username: gym_admin")
+            logger.info("Password: IronParadise@2024") 
+            logger.info("⚠️  CHANGE PASSWORD IMMEDIATELY AFTER FIRST LOGIN!")
+            
+            # Send system notification
+            await send_system_notification(
+                "System Initialized",
+                "Iron Paradise Gym management system is ready. Please change admin password.",
+                "warning"
+            )
         
         # Initialize reminder service
         reminder_service_instance = init_reminder_service(client, os.environ['DB_NAME'])
         reminder_service_instance.start()
         logger.info("Reminder service started successfully")
+        
     except Exception as e:
         logger.error(f"Failed to start services: {e}")
+
+async def initialize_default_payment_gateways():
+    """Initialize default payment gateways"""
+    try:
+        gateway_count = await db.payment_gateways.count_documents({})
+        if gateway_count > 0:
+            return
+        
+        gateways = [
+            PaymentGateway(
+                name="Razorpay",
+                provider="razorpay",
+                is_active=True,
+                supported_methods=["card", "upi", "netbanking", "wallet", "gpay", "paytm", "phonepe"]
+            ),
+            PaymentGateway(
+                name="PayU India",
+                provider="payu",
+                is_active=False,
+                supported_methods=["card", "upi", "netbanking", "wallet"]
+            ),
+            PaymentGateway(
+                name="CCAvenue",
+                provider="ccavenue", 
+                is_active=False,
+                supported_methods=["card", "netbanking", "wallet"]
+            ),
+            PaymentGateway(
+                name="Instamojo",
+                provider="instamojo",
+                is_active=False,
+                supported_methods=["card", "upi", "netbanking", "wallet"]
+            )
+        ]
+        
+        for gateway in gateways:
+            gateway_dict = prepare_for_mongo(gateway.dict())
+            await db.payment_gateways.insert_one(gateway_dict)
+            
+        logger.info("Default payment gateways initialized")
+        
+    except Exception as e:
+        logger.error(f"Error initializing payment gateways: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
