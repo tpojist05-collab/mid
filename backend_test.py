@@ -312,8 +312,8 @@ class IronParadiseGymAPITester:
             
             if not missing_fields:
                 self.created_member_id = response['id']
-                # The system currently has no admission fee configured, so total should equal monthly fee
-                expected_total = 2000.0  # Monthly fee only (no admission fee configured)
+                # Monthly membership should include admission fee (₹2000) + monthly fee (₹2000)
+                expected_total = 4000.0  # Monthly fee (₹2000) + admission fee (₹2000)
                 actual_total = response.get('total_amount_due', 0)
                 
                 if actual_total == expected_total:
