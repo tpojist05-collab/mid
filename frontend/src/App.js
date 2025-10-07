@@ -10,6 +10,7 @@ import EarningsManagement from "./components/EarningsManagement";
 import SettingsManagement from "./components/SettingsManagement";
 import UserManagement from "./components/UserManagement";
 import ReceiptManagement from "./components/ReceiptManagement";
+import AdminDataManagement from "./components/AdminDataManagement";
 import LoginForm from "./components/LoginForm";
 import Navigation from "./components/Navigation";
 import NotificationCenter from "./components/NotificationCenter";
