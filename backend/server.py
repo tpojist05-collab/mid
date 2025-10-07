@@ -482,7 +482,7 @@ async def get_admission_fee() -> float:
     settings = await db.gym_settings.find_one({"setting_name": "admission_fee"})
     if settings and "amount" in settings:
         return settings["amount"]
-    return 1500.0  # Default admission fee
+    return 2000.0  # Default admission fee
 
 async def update_monthly_earnings(payment: dict):
     """Update monthly earnings when a payment is recorded"""
