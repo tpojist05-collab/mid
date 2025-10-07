@@ -1699,11 +1699,32 @@ async def verify_razorpay_payment(payment_data: RazorpayPaymentVerify):
         payment_dict = prepare_for_mongo(payment_record.dict())
         await db.payments.insert_one(payment_dict)
         
-        # Update member payment status
+        # Calculate membership extension based on payment amount
+        membership_extension = await calculate_membership_extension(payment_record.amount)
+        
+        # Get current member data
+        current_member = await db.members.find_one({"id": payment_data.member_id})
+        current_end_date = datetime.now(timezone.utc)
+        
+        # Use existing end date if membership is still active, otherwise start from today
+        if current_member and current_member.get('membership_end'):
+            try:
+                existing_end_date = datetime.fromisoformat(current_member['membership_end'])
+                if existing_end_date > datetime.now(timezone.utc):
+                    current_end_date = existing_end_date
+            except:
+                pass
+        
+        # Calculate new expiry date
+        new_expiry_date = current_end_date + timedelta(days=membership_extension)
+        
+        # Update member status and expiry
         await db.members.update_one(
             {"id": payment_data.member_id},
             {"$set": {
                 "current_payment_status": PaymentStatus.PAID.value,
+                "member_status": "active",
+                "membership_end": new_expiry_date.isoformat(),
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }}
         )
