@@ -1199,16 +1199,60 @@ async def delete_member(member_id: str, current_user: User = Depends(get_current
         # Only admin can delete members, staff can only suspend
         if current_user.role != UserRole.ADMIN:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=403, 
                 detail="Only administrators can delete members. Use suspend instead."
             )
         
-        # Delete member and associated data
+        # Delete the member
         await db.members.delete_one({"id": member_id})
-        await db.payments.delete_many({"member_id": member_id})
-        await db.reminder_logs.delete_many({"member_id": member_id})
         
-        return {"message": f"Member {member['name']} deleted successfully"}
+        # Send notification
+        await send_system_notification(
+            f"Member '{member['name']}' deleted",
+            f"Member deleted by {current_user.full_name}",
+            "warning"
+        )
+        
+        return {"message": f"Member '{member['name']}' deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/members/bulk-delete")
+async def bulk_delete_members(
+    delete_data: dict,
+    current_admin: User = Depends(require_admin_role)
+):
+    """Bulk delete multiple members (admin only)"""
+    try:
+        member_ids = delete_data.get("member_ids", [])
+        if not member_ids:
+            raise HTTPException(status_code=400, detail="No member IDs provided")
+        
+        if len(member_ids) > 100:
+            raise HTTPException(status_code=400, detail="Cannot delete more than 100 members at once")
+        
+        # Get member names for notification
+        members = await db.members.find({"id": {"$in": member_ids}}).to_list(1000)
+        member_names = [member.get("name", "Unknown") for member in members]
+        
+        # Delete members
+        result = await db.members.delete_many({"id": {"$in": member_ids}})
+        
+        # Send notification
+        await send_system_notification(
+            f"Bulk delete: {result.deleted_count} members",
+            f"Members deleted: {', '.join(member_names[:5])}{'...' if len(member_names) > 5 else ''} by {current_admin.full_name}",
+            "warning"
+        )
+        
+        return {
+            "message": f"Successfully deleted {result.deleted_count} members",
+            "deleted_count": result.deleted_count,
+            "member_names": member_names
+        }
         
     except HTTPException:
         raise
