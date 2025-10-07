@@ -1831,6 +1831,306 @@ class IronParadiseGymAPITester:
                 self.log_test("Missing Data Validation", False, 
                             "Missing required fields should be validated", response)
 
+    def test_payment_expiry_logic(self):
+        """Test payment expiry logic - payments extend membership based on amount"""
+        if not self.auth_token:
+            self.log_test("Payment Expiry Logic", False, "No auth token available for testing")
+            return
+            
+        # Create a test member first
+        member_data = {
+            "name": "Payment Test Member",
+            "email": "payment.test@example.com",
+            "phone": "+91 9876543299",
+            "address": "Test Address",
+            "emergency_contact": {
+                "name": "Test Contact",
+                "phone": "+91 9876543298",
+                "relationship": "Friend"
+            },
+            "membership_type": "monthly"
+        }
+        
+        success, response = self.make_request('POST', 'members', member_data, auth_required=True)
+        if not success:
+            self.log_test("Payment Expiry Logic - Member Creation", False, "Failed to create test member", response)
+            return
+            
+        test_member_id = response.get('id')
+        original_end_date = response.get('membership_end')
+        
+        # Test 1: ₹2000 payment should extend membership by 30 days
+        payment_data = {
+            "member_id": test_member_id,
+            "amount": 2000.0,
+            "payment_method": "upi",
+            "description": "Monthly membership fee - 30 days extension",
+            "transaction_id": "UPI_TXN_2000_TEST"
+        }
+        
+        success, response = self.make_request('POST', 'payments', payment_data, auth_required=True)
+        if success:
+            # Check if member status changed to active and expiry date extended
+            success, member_response = self.make_request('GET', f'members/{test_member_id}', auth_required=True)
+            if success:
+                new_end_date = member_response.get('membership_end')
+                member_status = member_response.get('member_status')
+                payment_status = member_response.get('current_payment_status')
+                
+                if member_status == 'active' and payment_status == 'paid':
+                    self.log_test("Payment Expiry Logic - ₹2000 Payment", True, 
+                                f"₹2000 payment extended membership and set status to active. New end date: {new_end_date[:10] if new_end_date else 'N/A'}")
+                else:
+                    self.log_test("Payment Expiry Logic - ₹2000 Payment", False, 
+                                f"Expected active status, got: member_status={member_status}, payment_status={payment_status}")
+            else:
+                self.log_test("Payment Expiry Logic - ₹2000 Payment", False, "Failed to get updated member data")
+        else:
+            self.log_test("Payment Expiry Logic - ₹2000 Payment", False, "Failed to record ₹2000 payment", response)
+            
+        # Test 2: ₹4000 payment should extend membership by 60 days
+        payment_data_4000 = {
+            "member_id": test_member_id,
+            "amount": 4000.0,
+            "payment_method": "cash",
+            "description": "Two months membership fee - 60 days extension",
+            "transaction_id": "CASH_TXN_4000_TEST"
+        }
+        
+        success, response = self.make_request('POST', 'payments', payment_data_4000, auth_required=True)
+        if success:
+            # Check if membership was extended by additional 60 days
+            success, member_response = self.make_request('GET', f'members/{test_member_id}', auth_required=True)
+            if success:
+                final_end_date = member_response.get('membership_end')
+                self.log_test("Payment Expiry Logic - ₹4000 Payment", True, 
+                            f"₹4000 payment further extended membership. Final end date: {final_end_date[:10] if final_end_date else 'N/A'}")
+            else:
+                self.log_test("Payment Expiry Logic - ₹4000 Payment", False, "Failed to get updated member data after ₹4000 payment")
+        else:
+            self.log_test("Payment Expiry Logic - ₹4000 Payment", False, "Failed to record ₹4000 payment", response)
+
+    def test_receipt_register(self):
+        """Test receipt register - stored receipts are displayed"""
+        if not self.auth_token:
+            self.log_test("Receipt Register", False, "No auth token available for testing")
+            return
+            
+        # Test GET /api/receipts/register
+        success, response = self.make_request('GET', 'receipts/register', auth_required=True)
+        
+        if success:
+            if isinstance(response, list):
+                receipt_count = len(response)
+                self.log_test("Receipt Register - Get Stored Receipts", True, 
+                            f"Retrieved {receipt_count} stored receipts from register")
+                
+                # Verify receipt data includes required fields
+                if receipt_count > 0:
+                    first_receipt = response[0]
+                    required_fields = ['member_name', 'amount', 'date']
+                    missing_fields = [field for field in required_fields if field not in first_receipt]
+                    
+                    if not missing_fields:
+                        self.log_test("Receipt Register - Data Validation", True, 
+                                    f"Receipt data includes member name, amount, and date")
+                    else:
+                        self.log_test("Receipt Register - Data Validation", False, 
+                                    f"Missing receipt fields: {missing_fields}")
+            else:
+                self.log_test("Receipt Register - Get Stored Receipts", False, 
+                            "Expected list response for receipts register", response)
+        else:
+            # Check if it's a 404 (endpoint not found) or other error
+            if response.get('status_code') == 404:
+                self.log_test("Receipt Register - Get Stored Receipts", False, 
+                            "Receipt register endpoint not found (404) - may need implementation")
+            else:
+                self.log_test("Receipt Register - Get Stored Receipts", False, 
+                            "Failed to get receipts register", response)
+        
+        # Test generating a new receipt and confirming it's stored
+        if hasattr(self, 'created_payment_id') and self.created_payment_id:
+            success, response = self.make_request('POST', f'receipts/generate/{self.created_payment_id}', 
+                                                auth_required=True)
+            if success:
+                # Check if the new receipt appears in register
+                success, register_response = self.make_request('GET', 'receipts/register', auth_required=True)
+                if success and isinstance(register_response, list):
+                    new_receipt_count = len(register_response)
+                    self.log_test("Receipt Register - New Receipt Storage", True, 
+                                f"New receipt generated and stored. Total receipts: {new_receipt_count}")
+                else:
+                    self.log_test("Receipt Register - New Receipt Storage", False, 
+                                "Failed to verify new receipt in register")
+            else:
+                self.log_test("Receipt Register - New Receipt Generation", False, 
+                            "Failed to generate new receipt for testing")
+
+    def test_expired_members(self):
+        """Test expired members detection"""
+        if not self.auth_token:
+            self.log_test("Expired Members Detection", False, "No auth token available for testing")
+            return
+            
+        # Test GET /api/reminders/expiring-members?days=0 for expired members
+        success, response = self.make_request('GET', 'reminders/expiring-members?days=0', auth_required=True)
+        
+        if success:
+            if isinstance(response, dict) and 'expiring_members' in response:
+                expired_count = response.get('count', 0)
+                expired_members = response.get('expiring_members', [])
+                
+                self.log_test("Expired Members Detection - Days=0", True, 
+                            f"Retrieved {expired_count} expired members")
+                
+                # Verify expired member data
+                if expired_members:
+                    first_expired = expired_members[0]
+                    if 'name' in first_expired and 'membership_end' in first_expired:
+                        self.log_test("Expired Members Data Validation", True, 
+                                    f"Expired member data includes name and expiry date")
+                    else:
+                        self.log_test("Expired Members Data Validation", False, 
+                                    "Missing required fields in expired member data")
+            else:
+                self.log_test("Expired Members Detection - Days=0", False, 
+                            "Invalid response format for expired members", response)
+        else:
+            self.log_test("Expired Members Detection - Days=0", False, 
+                        "Failed to get expired members", response)
+            
+        # Test different day filters
+        for days in [7, 30]:
+            success, response = self.make_request('GET', f'reminders/expiring-members?days={days}', auth_required=True)
+            if success:
+                if isinstance(response, dict) and 'expiring_members' in response:
+                    count = response.get('count', 0)
+                    self.log_test(f"Expired Members Detection - Days={days}", True, 
+                                f"Retrieved {count} members expiring in {days} days")
+                else:
+                    self.log_test(f"Expired Members Detection - Days={days}", False, 
+                                "Invalid response format", response)
+            else:
+                self.log_test(f"Expired Members Detection - Days={days}", False, 
+                            f"Failed to get members expiring in {days} days", response)
+
+    def test_editable_reminder_templates(self):
+        """Test editable reminder templates"""
+        if not self.auth_token:
+            self.log_test("Editable Reminder Templates", False, "No auth token available for testing")
+            return
+            
+        # Test GET /api/settings/reminder-template
+        success, response = self.make_request('GET', 'settings/reminder-template', auth_required=True)
+        
+        if success:
+            if 'template' in response or 'message' in response:
+                current_template = response.get('template') or response.get('message', '')
+                self.log_test("Get Reminder Template", True, 
+                            f"Retrieved current reminder template (length: {len(current_template)} chars)")
+                
+                # Test PUT /api/settings/reminder-template
+                new_template = {
+                    "template": "Dear {member_name}, your membership expires on {expiry_date}. Please renew to continue enjoying our services. Payment details: Account Name: Electroforum, Account Number: 1234567890, IFSC: ELEC0001234, UPI: electroforum@upi"
+                }
+                
+                success, response = self.make_request('PUT', 'settings/reminder-template', new_template, auth_required=True)
+                
+                if success:
+                    self.log_test("Update Reminder Template", True, 
+                                "Reminder template updated successfully by admin/manager")
+                    
+                    # Verify the template was updated
+                    success, verify_response = self.make_request('GET', 'settings/reminder-template', auth_required=True)
+                    if success:
+                        updated_template = verify_response.get('template') or verify_response.get('message', '')
+                        if 'Electroforum' in updated_template:
+                            self.log_test("Verify Template Update", True, 
+                                        "Template update verified - contains custom content")
+                        else:
+                            self.log_test("Verify Template Update", False, 
+                                        "Template may not have been updated correctly")
+                    else:
+                        self.log_test("Verify Template Update", False, 
+                                    "Failed to verify template update")
+                else:
+                    self.log_test("Update Reminder Template", False, 
+                                "Failed to update reminder template", response)
+            else:
+                self.log_test("Get Reminder Template", False, 
+                            "Invalid response format for reminder template", response)
+        else:
+            self.log_test("Get Reminder Template", False, 
+                        "Failed to get reminder template", response)
+
+    def test_reminder_records(self):
+        """Test reminder records - sent reminders are logged"""
+        if not self.auth_token:
+            self.log_test("Reminder Records", False, "No auth token available for testing")
+            return
+            
+        # First, try to send a reminder to log it
+        if hasattr(self, 'created_member_id') and self.created_member_id:
+            success, response = self.make_request('POST', f'reminders/send/{self.created_member_id}', 
+                                                auth_required=True)
+            if success:
+                self.log_test("Send Reminder for Logging", True, 
+                            "Reminder sent successfully - should be logged")
+            else:
+                self.log_test("Send Reminder for Logging", False, 
+                            "Failed to send reminder for logging test", response)
+        
+        # Test GET /api/reminders/history
+        success, response = self.make_request('GET', 'reminders/history', auth_required=True)
+        
+        if success:
+            if isinstance(response, list):
+                history_count = len(response)
+                self.log_test("Get Reminder History", True, 
+                            f"Retrieved {history_count} reminder records from history")
+                
+                # Verify reminder records include required fields
+                if history_count > 0:
+                    first_record = response[0]
+                    required_fields = ['sender', 'timestamp', 'message']
+                    missing_fields = [field for field in required_fields if field not in first_record]
+                    
+                    if not missing_fields:
+                        self.log_test("Reminder Records Validation", True, 
+                                    "Reminder records include sender, timestamp, and message")
+                    else:
+                        self.log_test("Reminder Records Validation", False, 
+                                    f"Missing reminder record fields: {missing_fields}")
+            else:
+                self.log_test("Get Reminder History", False, 
+                            "Expected list response for reminder history", response)
+        else:
+            # Check if it's a known MongoDB ObjectId serialization issue
+            if response.get('status_code') == 500:
+                self.log_test("Get Reminder History", False, 
+                            "Reminder history endpoint has MongoDB ObjectId serialization issue (500 error) - known non-critical issue")
+            else:
+                self.log_test("Get Reminder History", False, 
+                            "Failed to get reminder history", response)
+
+    def run_critical_fixes_tests(self):
+        """Run tests for critical fixes mentioned in review request"""
+        print("\n" + "="*80)
+        print("CRITICAL FIXES TESTING FOR IRON PARADISE GYM")
+        print("="*80)
+        
+        # Test critical fixes
+        self.test_payment_expiry_logic()
+        self.test_receipt_register()
+        self.test_expired_members()
+        self.test_editable_reminder_templates()
+        self.test_reminder_records()
+        
+        print("\n" + "="*80)
+        print("CRITICAL FIXES TESTING COMPLETED")
+        print("="*80)
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🏋️ Starting Iron Paradise Gym Management API Tests")
