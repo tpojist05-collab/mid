@@ -2017,17 +2017,32 @@ async def get_expiring_members_for_reminders(
 
 @api_router.post("/reminders/test")
 async def test_reminder_service():
-    """Test the reminder service manually"""
+    """Test the WhatsApp reminder service manually"""
     try:
-        service = get_reminder_service()
-        if not service:
-            raise HTTPException(status_code=500, detail="Reminder service not initialized")
+        whatsapp_service = get_whatsapp_service()
+        if not whatsapp_service:
+            raise HTTPException(status_code=500, detail="WhatsApp service not initialized")
         
-        await service.check_and_send_reminders()
-        return {"message": "Reminder check completed successfully"}
+        # Test by getting some expiring members and attempting to send reminders
+        members = await db.members.find({
+            "current_payment_status": {"$in": ["paid", "pending"]}
+        }).limit(1).to_list(1)
+        
+        if members:
+            test_member = members[0]
+            result = await whatsapp_service.send_reminder(test_member, 7)
+            return {
+                "message": "WhatsApp reminder service test completed",
+                "test_result": result,
+                "member_tested": test_member.get('name', 'Unknown')
+            }
+        else:
+            return {
+                "message": "WhatsApp reminder service initialized but no members available for testing"
+            }
         
     except Exception as e:
-        logger.error(f"Error testing reminder service: {e}")
+        logger.error(f"Error testing WhatsApp service: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Gym Settings Routes
