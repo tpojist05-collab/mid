@@ -327,18 +327,20 @@ const ReceiptManagement = () => {
 
       {/* Edit Template Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Receipt Template</DialogTitle>
           </DialogHeader>
-          <TemplateForm 
-            initialData={editingTemplate}
-            onSubmit={(data) => updateTemplate(editingTemplate.id, data)}
-            onCancel={() => {
-              setShowEditDialog(false);
-              setEditingTemplate(null);
-            }}
-          />
+          <div className="max-h-[70vh] overflow-y-auto pr-2">
+            <TemplateForm 
+              initialData={editingTemplate}
+              onSubmit={(data) => updateTemplate(editingTemplate.id, data)}
+              onCancel={() => {
+                setShowEditDialog(false);
+                setEditingTemplate(null);
+              }}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </div>
