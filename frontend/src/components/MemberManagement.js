@@ -509,6 +509,10 @@ const MemberManagement = () => {
                     member={member}
                     onUpdate={fetchMembers}
                   />
+                  <MemberEndDateManager
+                    member={member}
+                    onUpdate={fetchMembers}
+                  />
                   <Button 
                     variant="outline" 
                     size="sm" 
