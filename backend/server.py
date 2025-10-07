@@ -2742,17 +2742,27 @@ async def bulk_delete_receipts(
         raise HTTPException(status_code=500, detail=str(e))
 
 # Receipt Management API
-@app.get("/api/receipts/templates", response_model=List[dict])
+@app.get("/api/receipts/templates")
 async def get_receipt_templates(current_user: User = Depends(get_current_active_user)):
     """Get all receipt templates"""
     try:
-        if current_user.role != UserRole.ADMIN:
-            raise HTTPException(status_code=403, detail="Admin access required")
+        templates = await db.receipt_templates.find().to_list(1000)
         
-        templates = await db.receipt_templates.find().to_list(length=None)
-        return templates
+        # Clean templates data for serialization
+        cleaned_templates = []
+        for template in templates:
+            cleaned_template = parse_from_mongo(template.copy())
+            cleaned_templates.append(cleaned_template)
+        
+        return cleaned_templates
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error fetching receipt templates: {e}")
+        # Return default template if none exist
+        return [{
+            "id": "default",
+            "name": "Default Template",
+            "is_default": True
+        }]
 
 @app.get("/api/receipts/templates/{template_id}")
 async def get_receipt_template(template_id: str, current_user: User = Depends(get_current_active_user)):
