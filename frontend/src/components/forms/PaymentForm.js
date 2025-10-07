@@ -15,6 +15,8 @@ const PaymentForm = ({
   members,
   showRazorpay,
   setShowRazorpay,
+  showPayU,
+  setShowPayU,
   selectedMemberForPayment,
   setSelectedMemberForPayment,
   handleManualPaymentSubmit,
