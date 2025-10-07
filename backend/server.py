@@ -2400,7 +2400,7 @@ async def generate_receipt(
     template_id: str = None, 
     current_user: User = Depends(get_current_active_user)
 ):
-    """Generate receipt for payment - Real-time functionality"""
+    """Generate receipt for payment - Real-time functionality with storage"""
     try:
         # Get payment details
         payment = await db.payments.find_one({"id": payment_id})
@@ -2414,6 +2414,18 @@ async def generate_receipt(
         member = await db.members.find_one({"id": payment["member_id"]})
         if not member:
             raise HTTPException(status_code=404, detail="Member not found")
+        
+        # Check if receipt already exists for this payment
+        existing_receipt = await db.receipts.find_one({"payment_id": payment["id"]})
+        if existing_receipt:
+            return {
+                "message": "Receipt already exists",
+                "receipt_id": existing_receipt["id"],
+                "receipt_html": existing_receipt["receipt_html"],
+                "payment_amount": payment.get("amount", 0),
+                "member_name": member.get("name", "Unknown"),
+                "generated_at": existing_receipt["generated_at"]
+            }
         
         # Get template
         if template_id:
@@ -2456,21 +2468,32 @@ async def generate_receipt(
         # Generate receipt HTML
         receipt_html = await generate_receipt_html(payment, member, template)
         
-        # Store receipt record
+        # Store receipt record in receipt register
         receipt_record = {
             "id": str(uuid.uuid4()),
             "payment_id": payment["id"],
             "member_id": payment["member_id"],
+            "member_name": member.get("name", "Unknown"),
+            "payment_amount": payment.get("amount", 0),
+            "payment_method": payment.get("method", "cash"),
             "template_id": template["id"],
             "receipt_html": receipt_html,
             "generated_by": current_user.id,
-            "generated_at": datetime.now(timezone.utc)
+            "generated_at": datetime.now(timezone.utc),
+            "status": "active"
         }
         
         await db.receipts.insert_one(receipt_record)
         
+        # Send notification
+        await send_system_notification(
+            "Receipt Generated",
+            f"Receipt generated for {member.get('name')} - ₹{payment.get('amount', 0)} by {current_user.full_name}",
+            "info"
+        )
+        
         return {
-            "message": "Receipt generated successfully",
+            "message": "Receipt generated and stored successfully",
             "receipt_id": receipt_record["id"],
             "receipt_html": receipt_html,
             "payment_amount": payment.get("amount", 0),
