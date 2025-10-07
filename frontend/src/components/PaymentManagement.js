@@ -128,6 +128,7 @@ const PaymentManagement = () => {
       transaction_id: ''
     });
     setShowRazorpay(false);
+    setShowPayU(false);
     setSelectedMemberForPayment(null);
   };
 
