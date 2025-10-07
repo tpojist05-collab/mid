@@ -2580,6 +2580,13 @@ async def startup_event():
             logger.info("WhatsApp service initialized successfully")
         else:
             logger.warning("Failed to initialize WhatsApp service")
+            
+        # Initialize PayU service
+        payu_service = initialize_payu_service()
+        if payu_service:
+            logger.info("PayU service initialized successfully")
+        else:
+            logger.warning("Failed to initialize PayU service")
         
     except Exception as e:
         logger.error(f"Failed to start services: {e}")
