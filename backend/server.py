@@ -12,6 +12,7 @@ from datetime import datetime, timezone, timedelta
 from enum import Enum
 import razorpay
 from whatsapp_service import initialize_whatsapp_service, get_whatsapp_service
+from reminder_service import init_reminder_service, get_reminder_service
 from jose import JWTError, jwt
 import hashlib
 import secrets
