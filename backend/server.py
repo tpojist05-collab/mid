@@ -2509,7 +2509,7 @@ async def initialize_receipt_templates():
         raise
 
 # Receipt Register Management API
-@app.get("/api/receipts")
+@api_router.get("/receipts/register")
 async def get_receipt_register(current_user: User = Depends(get_current_active_user)):
     """Get all stored receipts in register"""
     try:
@@ -2523,7 +2523,12 @@ async def get_receipt_register(current_user: User = Depends(get_current_active_u
             cleaned_receipt.setdefault('id', str(uuid.uuid4()))
             cleaned_receipt.setdefault('member_name', 'Unknown')
             cleaned_receipt.setdefault('payment_amount', 0)
-            cleaned_receipt.setdefault('generated_at', datetime.now(timezone.utc))
+            cleaned_receipt.setdefault('payment_method', 'cash')
+            cleaned_receipt.setdefault('generated_at', datetime.now(timezone.utc).isoformat())
+            
+            # Convert datetime to string if needed
+            if isinstance(cleaned_receipt.get('generated_at'), datetime):
+                cleaned_receipt['generated_at'] = cleaned_receipt['generated_at'].isoformat()
             
             cleaned_receipts.append(cleaned_receipt)
         
