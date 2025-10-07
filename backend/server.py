@@ -1009,20 +1009,43 @@ async def get_members(
         # Update member status based on expiry for all members
         updated_members = []
         for member in members:
-            member_obj = parse_from_mongo(member)
+            # Clean MongoDB document
+            member_obj = parse_from_mongo(member.copy())
             
             # Check if member is expired
             if member_obj.get('membership_end'):
-                membership_end = datetime.fromisoformat(member_obj['membership_end'])
-                if membership_end < current_time:
-                    # Member is expired - update status
-                    await db.members.update_one(
-                        {"id": member_obj['id']},
-                        {"$set": {"current_payment_status": "expired"}}
-                    )
-                    member_obj['current_payment_status'] = "expired"
+                try:
+                    if isinstance(member_obj['membership_end'], str):
+                        membership_end = datetime.fromisoformat(member_obj['membership_end'])
+                    else:
+                        membership_end = member_obj['membership_end']
+                        
+                    if membership_end < current_time:
+                        # Member is expired - update status
+                        await db.members.update_one(
+                            {"id": member_obj['id']},
+                            {"$set": {"current_payment_status": "expired"}}
+                        )
+                        member_obj['current_payment_status'] = "expired"
+                except (ValueError, TypeError):
+                    # Handle invalid date format
+                    pass
             
-            updated_members.append(Member(**member_obj))
+            # Ensure all required fields exist with defaults
+            member_obj.setdefault('id', str(uuid.uuid4()))
+            member_obj.setdefault('name', 'Unknown')
+            member_obj.setdefault('email', '')
+            member_obj.setdefault('phone', '')
+            member_obj.setdefault('membership_type', MembershipType.MONTHLY)
+            member_obj.setdefault('current_payment_status', PaymentStatus.PENDING)
+            member_obj.setdefault('member_status', MemberStatus.ACTIVE)
+            
+            try:
+                updated_members.append(Member(**member_obj))
+            except Exception as e:
+                logger.error(f"Error creating member object: {e}, data: {member_obj}")
+                # Skip invalid members
+                continue
         
         return updated_members
     except Exception as e:
