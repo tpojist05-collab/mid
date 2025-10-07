@@ -2375,9 +2375,6 @@ async def bulk_delete_receipts(
         if len(receipt_ids) > 50:
             raise HTTPException(status_code=400, detail="Cannot delete more than 50 receipts at once")
         
-        # Get receipt details for notification
-        receipts = await db.receipts.find({"id": {"$in": receipt_ids}, "status": "active"}).to_list(1000)
-        
         # Bulk soft delete
         result = await db.receipts.update_many(
             {"id": {"$in": receipt_ids}, "status": "active"},
