@@ -319,8 +319,11 @@ const MemberManagement = () => {
             </DialogTrigger>
           </Dialog>
         </div>
-        <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto z-50">
+      </div>
+
+      {/* Add Member Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto z-50">
             <DialogHeader>
               <DialogTitle>Add New Member</DialogTitle>
             </DialogHeader>
