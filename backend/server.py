@@ -1834,7 +1834,7 @@ async def get_expiring_members_for_reminders(
                     
                     days_left = (end_date - current_time).days
                     cleaned_member['days_until_expiry'] = days_left
-                except:
+                except (ValueError, TypeError, AttributeError):
                     cleaned_member['days_until_expiry'] = 0
             
             # Check if reminder was already sent today
