@@ -2402,8 +2402,22 @@ async def get_receipt_register(current_user: User = Depends(get_current_active_u
     """Get all stored receipts in register"""
     try:
         receipts = await db.receipts.find({"status": "active"}).sort("generated_at", -1).to_list(1000)
-        return receipts
+        
+        # Clean receipts data for serialization
+        cleaned_receipts = []
+        for receipt in receipts:
+            cleaned_receipt = parse_from_mongo(receipt.copy())
+            # Ensure required fields exist
+            cleaned_receipt.setdefault('id', str(uuid.uuid4()))
+            cleaned_receipt.setdefault('member_name', 'Unknown')
+            cleaned_receipt.setdefault('payment_amount', 0)
+            cleaned_receipt.setdefault('generated_at', datetime.now(timezone.utc))
+            
+            cleaned_receipts.append(cleaned_receipt)
+        
+        return cleaned_receipts
     except Exception as e:
+        logger.error(f"Error fetching receipts: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/receipts/{receipt_id}")
