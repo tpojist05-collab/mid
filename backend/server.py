@@ -1271,7 +1271,7 @@ async def update_member_end_date(
     date_data: dict,
     current_user: User = Depends(get_current_active_user)
 ):
-    """Update member's membership end date directly"""
+    """Update member's membership end date directly and update status"""
     try:
         existing_member = await db.members.find_one({"id": member_id})
         if not existing_member:
@@ -1288,9 +1288,22 @@ async def update_member_end_date(
             except ValueError:
                 raise HTTPException(status_code=400, detail="Invalid date format")
         
-        # Update member record
+        # Determine new status based on end date
+        current_time = datetime.now(timezone.utc)
+        if new_end_date > current_time:
+            # Future date - active membership
+            new_payment_status = "paid"
+            new_member_status = "active"
+        else:
+            # Past date - expired membership
+            new_payment_status = "expired"
+            new_member_status = "inactive"
+        
+        # Update member record with new end date and status
         update_data = {
             'membership_end': new_end_date.isoformat(),
+            'current_payment_status': new_payment_status,
+            'member_status': new_member_status,
             'updated_at': datetime.now(timezone.utc).isoformat()
         }
         
@@ -1299,18 +1312,21 @@ async def update_member_end_date(
             {"$set": update_data}
         )
         
-        # Send notification
+        # Send notification with status change
+        status_text = "ACTIVE" if new_payment_status == "paid" else "EXPIRED"
         await send_system_notification(
             "Member end date updated",
-            f"'{existing_member.get('name')}' membership end date changed to {new_end_date.strftime('%Y-%m-%d')} by {current_user.full_name}",
+            f"'{existing_member.get('name')}' membership end date changed to {new_end_date.strftime('%Y-%m-%d')} by {current_user.full_name}. Status: {status_text}",
             "info"
         )
         
         return {
-            "message": "Member end date updated successfully",
+            "message": "Member end date and status updated successfully",
             "member_id": member_id,
             "old_end_date": existing_member.get('membership_end'),
-            "new_end_date": new_end_date.isoformat()
+            "new_end_date": new_end_date.isoformat(),
+            "new_status": new_payment_status,
+            "member_status": new_member_status
         }
         
     except HTTPException:
