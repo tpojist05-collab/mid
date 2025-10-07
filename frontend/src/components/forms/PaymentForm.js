@@ -128,22 +128,39 @@ const PaymentForm = ({
                   Online Payment 
                   <Badge className="ml-2 bg-green-100 text-green-800 border-green-200">Recommended</Badge>
                 </h5>
-                <p className="text-sm text-slate-600 mb-4">Secure online payment via Razorpay</p>
+                <p className="text-sm text-slate-600 mb-4">Choose your preferred payment gateway</p>
                 
-                <Button 
-                  type="button"
-                  onClick={() => {
-                    if (!formData.member_id || !formData.amount || !formData.description) {
-                      toast.error('Please fill in member, amount, and description first');
-                      return;
-                    }
-                    setShowRazorpay(true);
-                  }}
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                  disabled={!formData.member_id || !formData.amount || !formData.description}
-                >
-                  💳 Pay Online
-                </Button>
+                <div className="space-y-2">
+                  <Button 
+                    type="button"
+                    onClick={() => {
+                      if (!formData.member_id || !formData.amount || !formData.description) {
+                        toast.error('Please fill in member, amount, and description first');
+                        return;
+                      }
+                      setShowRazorpay(true);
+                    }}
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                    disabled={!formData.member_id || !formData.amount || !formData.description}
+                  >
+                    💳 Pay with Razorpay
+                  </Button>
+                  
+                  <Button 
+                    type="button"
+                    onClick={() => {
+                      if (!formData.member_id || !formData.amount || !formData.description) {
+                        toast.error('Please fill in member, amount, and description first');
+                        return;
+                      }
+                      setShowPayU(true);
+                    }}
+                    className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+                    disabled={!formData.member_id || !formData.amount || !formData.description}
+                  >
+                    🚀 Pay with PayU
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
