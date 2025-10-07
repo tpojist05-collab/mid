@@ -1920,6 +1920,66 @@ async def get_admission_fee_setting(current_user: User = Depends(get_current_act
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.get("/settings/bank-account")
+async def get_bank_account_settings(current_user: User = Depends(get_current_active_user)):
+    """Get bank account details for payments"""
+    try:
+        settings = await db.gym_settings.find_one({"setting_name": "bank_account"})
+        if settings and "account_details" in settings:
+            return settings["account_details"]
+        
+        # Return default bank account (to be configured by admin)
+        return {
+            "account_name": "Electroforum",
+            "account_number": "123456789012",
+            "ifsc_code": "BANK0001234",
+            "bank_name": "State Bank of India",
+            "upi_id": "electroforum@paytm"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/settings/bank-account")
+async def update_bank_account_settings(
+    account_data: dict,
+    current_admin: User = Depends(require_admin_role)
+):
+    """Update bank account details (admin only)"""
+    try:
+        account_details = {
+            "account_name": account_data.get("account_name", "Electroforum"),
+            "account_number": account_data.get("account_number"),
+            "ifsc_code": account_data.get("ifsc_code"),
+            "bank_name": account_data.get("bank_name"),
+            "upi_id": account_data.get("upi_id"),
+            "updated_at": datetime.now(timezone.utc),
+            "updated_by": current_admin.id
+        }
+        
+        await db.gym_settings.update_one(
+            {"setting_name": "bank_account"},
+            {
+                "$set": {
+                    "setting_name": "bank_account",
+                    "account_details": account_details
+                }
+            },
+            upsert=True
+        )
+        
+        await send_system_notification(
+            "Bank account details updated",
+            f"Payment account information updated by {current_admin.full_name}",
+            "info"
+        )
+        
+        return {"message": "Bank account details updated successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.put("/settings/membership-rates")
 async def update_membership_rates(
     rates_data: dict,
