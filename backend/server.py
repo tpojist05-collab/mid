@@ -2814,11 +2814,13 @@ async def clear_all_receipts(current_admin: User = Depends(require_admin_role)):
 
 @api_router.delete("/admin/clear-all-data")
 async def clear_all_application_data(
-    confirmation: str,
+    request: dict,
     current_admin: User = Depends(require_admin_role)
 ):
     """Clear ALL application data - members, payments, receipts (admin only - EXTREMELY DANGEROUS)"""
     try:
+        confirmation = request.get("confirmation", "")
+        
         # Require exact confirmation phrase
         if confirmation != "DELETE_ALL_DATA_PERMANENTLY":
             raise HTTPException(
