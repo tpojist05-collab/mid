@@ -331,9 +331,17 @@ const PaymentManagement = () => {
                   <div className="text-3xl font-bold text-green-600 mb-1">
                     {formatCurrency(payment.amount)}
                   </div>
-                  <div className="text-sm text-slate-500">
+                  <div className="text-sm text-slate-500 mb-3">
                     Payment #{payment.id.slice(-6)}
                   </div>
+                  <Button
+                    onClick={() => generateReceiptForPayment(payment.id)}
+                    variant="outline"
+                    size="sm"
+                    className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+                  >
+                    📄 Generate Receipt
+                  </Button>
                 </div>
               </div>
             </CardContent>
