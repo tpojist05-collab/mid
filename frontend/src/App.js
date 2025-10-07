@@ -50,6 +50,8 @@ const AppContent = () => {
         return <UserManagement />;
       case 'receipts':
         return <ReceiptManagement />;
+      case 'data-management':
+        return <AdminDataManagement />;
       case 'settings':
         return <SettingsManagement />;
       default:
