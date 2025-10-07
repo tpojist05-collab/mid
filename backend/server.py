@@ -2094,6 +2094,89 @@ async def get_bank_account_settings(current_user: User = Depends(get_current_act
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.get("/settings/reminder-template")
+async def get_reminder_template(current_user: User = Depends(get_current_active_user)):
+    """Get current reminder message template"""
+    try:
+        template = await db.gym_settings.find_one({"setting_name": "reminder_template"})
+        if template and "message_template" in template:
+            return template["message_template"]
+        
+        # Return default template
+        return {
+            "subject": "🏋️ Iron Paradise Gym - Membership Renewal Reminder",
+            "message": """Hi {member_name},
+
+Your {membership_type} membership expires {urgency} on {expiry_date}.
+
+⚠️ Please renew immediately to continue enjoying our gym facilities.
+
+💳 PAYMENT OPTIONS:
+
+🏦 Bank Transfer:
+Account Name: {account_name}
+Account Number: {account_number}
+IFSC Code: {ifsc_code}
+Bank: {bank_name}
+
+📱 UPI Payment:
+UPI ID: {upi_id}
+
+📍 Or visit our gym reception for instant renewal.
+
+After payment, please share the receipt on WhatsApp or show at reception for membership activation.
+
+Thank you for choosing Iron Paradise Gym! 💪
+
+- Iron Paradise Gym Team""",
+            "variables": ["member_name", "membership_type", "urgency", "expiry_date", "account_name", "account_number", "ifsc_code", "bank_name", "upi_id"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/settings/reminder-template")
+async def update_reminder_template(
+    template_data: dict,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Update reminder message template (admin/manager only)"""
+    try:
+        # Check if user has permission (admin or manager)
+        if current_user.role not in ["admin", "manager"]:
+            raise HTTPException(status_code=403, detail="Admin or Manager access required")
+        
+        message_template = {
+            "subject": template_data.get("subject", "Membership Renewal Reminder"),
+            "message": template_data.get("message", ""),
+            "variables": template_data.get("variables", []),
+            "updated_at": datetime.now(timezone.utc),
+            "updated_by": current_user.id
+        }
+        
+        await db.gym_settings.update_one(
+            {"setting_name": "reminder_template"},
+            {
+                "$set": {
+                    "setting_name": "reminder_template",
+                    "message_template": message_template
+                }
+            },
+            upsert=True
+        )
+        
+        await send_system_notification(
+            "Reminder template updated",
+            f"WhatsApp reminder message template updated by {current_user.full_name}",
+            "info"
+        )
+        
+        return {"message": "Reminder template updated successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.put("/settings/bank-account")
 async def update_bank_account_settings(
     account_data: dict,
