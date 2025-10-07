@@ -67,14 +67,54 @@ const PaymentManagement = () => {
         amount: parseFloat(formData.amount)
       };
       
-      await apiClient.post('/payments', paymentData);
+      const response = await apiClient.post('/payments', paymentData);
       toast.success('Payment recorded successfully');
+      
+      // Generate receipt immediately after payment
+      if (response.data.payment_id) {
+        try {
+          const receiptResponse = await apiClient.post(
+            `/payments/${response.data.payment_id}/receipt`,
+            {}
+          );
+          
+          // Open receipt in new window
+          const newWindow = window.open('', '_blank');
+          newWindow.document.write(receiptResponse.data.receipt_html);
+          newWindow.document.close();
+          
+          toast.success('Receipt generated and opened!');
+        } catch (receiptError) {
+          console.error('Error generating receipt:', receiptError);
+          toast.error('Payment recorded but receipt generation failed');
+        }
+      }
+      
       setIsAddModalOpen(false);
       fetchPaymentsAndMembers();
       resetForm();
     } catch (error) {
       console.error('Error recording payment:', error);
       toast.error('Failed to record payment');
+    }
+  };
+
+  const generateReceiptForPayment = async (paymentId) => {
+    try {
+      const response = await apiClient.post(
+        `/payments/${paymentId}/receipt`,
+        {}
+      );
+      
+      // Open receipt in new window
+      const newWindow = window.open('', '_blank');
+      newWindow.document.write(response.data.receipt_html);
+      newWindow.document.close();
+      
+      toast.success('Receipt generated successfully!');
+    } catch (error) {
+      console.error('Error generating receipt:', error);
+      toast.error('Failed to generate receipt');
     }
   };
 
