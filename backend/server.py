@@ -2287,13 +2287,20 @@ async def delete_receipt_template(template_id: str, current_user: User = Depends
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/receipts/generate/{payment_id}")
-async def generate_receipt(payment_id: str, template_id: str = None, current_user: User = Depends(get_current_active_user)):
-    """Generate receipt for payment"""
+async def generate_receipt(
+    payment_id: str, 
+    template_id: str = None, 
+    current_user: User = Depends(get_current_active_user)
+):
+    """Generate receipt for payment - Real-time functionality"""
     try:
         # Get payment details
         payment = await db.payments.find_one({"id": payment_id})
         if not payment:
-            raise HTTPException(status_code=404, detail="Payment not found")
+            # Try to find by transaction_id as backup
+            payment = await db.payments.find_one({"transaction_id": payment_id})
+            if not payment:
+                raise HTTPException(status_code=404, detail="Payment not found")
         
         # Get member details
         member = await db.members.find_one({"id": payment["member_id"]})
@@ -2307,7 +2314,36 @@ async def generate_receipt(payment_id: str, template_id: str = None, current_use
             template = await db.receipt_templates.find_one({"is_default": True})
         
         if not template:
-            raise HTTPException(status_code=404, detail="Receipt template not found")
+            # Create a basic template if none exists
+            template = {
+                "id": str(uuid.uuid4()),
+                "name": "Basic Receipt",
+                "is_default": True,
+                "header": {
+                    "gym_name": "Iron Paradise Gym",
+                    "address": "123 Fitness Street, Gym City, 123456",
+                    "phone": "+91-9876543210",
+                    "email": "info@ironparadise.com",
+                    "website": "www.ironparadise.com"
+                },
+                "styles": {
+                    "primary_color": "#2563eb",
+                    "secondary_color": "#64748b",
+                    "font_family": "Arial, sans-serif",
+                    "font_size": "14px"
+                },
+                "sections": {
+                    "show_payment_details": True,
+                    "show_member_info": True,
+                    "show_service_details": True,
+                    "show_terms": True
+                },
+                "footer": {
+                    "thank_you_message": "Thank you for choosing Iron Paradise Gym!",
+                    "terms_text": "All payments are non-refundable. Terms and conditions apply.",
+                    "contact_info": "For queries, contact us at info@ironparadise.com"
+                }
+            }
         
         # Generate receipt HTML
         receipt_html = await generate_receipt_html(payment, member, template)
@@ -2315,7 +2351,7 @@ async def generate_receipt(payment_id: str, template_id: str = None, current_use
         # Store receipt record
         receipt_record = {
             "id": str(uuid.uuid4()),
-            "payment_id": payment_id,
+            "payment_id": payment["id"],
             "member_id": payment["member_id"],
             "template_id": template["id"],
             "receipt_html": receipt_html,
@@ -2328,8 +2364,22 @@ async def generate_receipt(payment_id: str, template_id: str = None, current_use
         return {
             "message": "Receipt generated successfully",
             "receipt_id": receipt_record["id"],
-            "receipt_html": receipt_html
+            "receipt_html": receipt_html,
+            "payment_amount": payment.get("amount", 0),
+            "member_name": member.get("name", "Unknown")
         }
+    except Exception as e:
+        logger.error(f"Error generating receipt: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/payments/{payment_id}/receipt")
+async def generate_payment_receipt(
+    payment_id: str,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Quick receipt generation for a payment"""
+    try:
+        return await generate_receipt(payment_id, None, current_user)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
