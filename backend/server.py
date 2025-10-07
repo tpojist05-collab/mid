@@ -484,6 +484,29 @@ async def get_admission_fee() -> float:
         return settings["amount"]
     return 2000.0  # Default admission fee
 
+async def calculate_membership_extension(payment_amount: float) -> int:
+    """Calculate membership extension days based on payment amount"""
+    # Get current membership rates
+    settings = await db.gym_settings.find_one({"setting_name": "membership_rates"})
+    if settings and "rates" in settings:
+        rates = settings["rates"]
+    else:
+        # Default rates
+        rates = {
+            "monthly": 2000.0,
+            "quarterly": 5500.0,
+            "six_monthly": 10500.0
+        }
+    
+    monthly_rate = rates.get("monthly", 2000.0)
+    
+    # Calculate days based on monthly rate (30 days per month)
+    if monthly_rate > 0:
+        months = payment_amount / monthly_rate
+        return int(months * 30)  # 30 days per month
+    
+    return 30  # Default to 30 days if rate is invalid
+
 async def update_monthly_earnings(payment: dict):
     """Update monthly earnings when a payment is recorded"""
     try:
