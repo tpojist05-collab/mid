@@ -280,6 +280,8 @@ Thank you!
             
             # Calculate days until expiry
             expiry_date = datetime.fromisoformat(member['membership_end'])
+            if expiry_date.tzinfo is None:
+                expiry_date = expiry_date.replace(tzinfo=timezone.utc)
             days_until_expiry = (expiry_date - datetime.now(timezone.utc)).days
             
             success = await self.send_reminder(member, days_until_expiry)
