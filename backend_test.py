@@ -1446,6 +1446,14 @@ class IronParadiseGymAPITester:
         print("-" * 40)
         self.test_error_handling()
         
+        print("\n🔥 CRITICAL FIXES TESTING")
+        print("-" * 40)
+        self.test_critical_fixes_whatsapp_reminders()
+        self.test_critical_fixes_membership_end_date()
+        self.test_critical_fixes_receipt_generation()
+        self.test_critical_fixes_bulk_member_deletion()
+        self.test_critical_fixes_error_handling()
+        
         # Print summary
         print("=" * 60)
         print(f"📊 Test Summary: {self.tests_passed}/{self.tests_run} tests passed")
