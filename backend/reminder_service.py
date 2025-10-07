@@ -176,7 +176,7 @@ class ReminderService:
             return False
 
     async def create_reminder_message(self, member: Dict[str, Any], days: int) -> str:
-        """Create reminder message text with payment details"""
+        """Create reminder message text with payment details using editable template"""
         try:
             membership_type = member.get('membership_type', 'monthly').replace('_', ' ').title()
             expiry_date = datetime.fromisoformat(member['membership_end']).strftime('%d %b %Y')
@@ -185,10 +185,47 @@ class ReminderService:
                 urgency = "soon"
             elif days == 3:
                 urgency = "very soon"
+            elif days == 0:
+                urgency = "today"
+            elif days < 0:
+                urgency = "EXPIRED"
             else:
                 urgency = "tomorrow"
             
-            # Get bank account details from database
+            # Get editable reminder template
+            template_settings = await self.db.gym_settings.find_one({"setting_name": "reminder_template"})
+            if template_settings and "message_template" in template_settings:
+                message_template = template_settings["message_template"]["message"]
+            else:
+                # Default template
+                message_template = """🏋️ Iron Paradise Gym - Membership Renewal Reminder
+
+Hi {member_name},
+
+Your {membership_type} membership expires {urgency} on {expiry_date}.
+
+⚠️ Please renew immediately to continue enjoying our gym facilities.
+
+💳 PAYMENT OPTIONS:
+
+🏦 Bank Transfer:
+Account Name: {account_name}
+Account Number: {account_number}
+IFSC Code: {ifsc_code}
+Bank: {bank_name}
+
+📱 UPI Payment:
+UPI ID: {upi_id}
+
+📍 Or visit our gym reception for instant renewal.
+
+After payment, please share the receipt on WhatsApp or show at reception for membership activation.
+
+Thank you for choosing Iron Paradise Gym! 💪
+
+- Iron Paradise Gym Team"""
+            
+            # Get bank account details
             try:
                 bank_settings = await self.db.gym_settings.find_one({"setting_name": "bank_account"})
                 if bank_settings and "account_details" in bank_settings:
@@ -206,38 +243,27 @@ class ReminderService:
                 logger.error(f"Error fetching bank details: {e}")
                 account = {
                     "account_name": "Electroforum",
-                    "account_number": "Not Available",
-                    "ifsc_code": "Not Available", 
+                    "account_number": "Contact Admin",
+                    "ifsc_code": "Contact Admin", 
                     "bank_name": "Contact Admin",
                     "upi_id": "Contact Admin"
                 }
             
-            return f"""🏋️ Iron Paradise Gym - Membership Renewal Reminder
-
-Hi {member['name']},
-
-Your {membership_type} membership expires {urgency} on {expiry_date}.
-
-⚠️ Please renew immediately to continue enjoying our gym facilities.
-
-💳 PAYMENT OPTIONS:
-
-🏦 Bank Transfer:
-Account Name: {account['account_name']}
-Account Number: {account['account_number']}
-IFSC Code: {account['ifsc_code']}
-Bank: {account['bank_name']}
-
-📱 UPI Payment:
-UPI ID: {account['upi_id']}
-
-📍 Or visit our gym reception for instant renewal.
-
-After payment, please share the receipt on WhatsApp or show at reception for membership activation.
-
-Thank you for choosing Iron Paradise Gym! 💪
-
-- Iron Paradise Gym Team"""
+            # Format message with variables
+            formatted_message = message_template.format(
+                member_name=member['name'],
+                membership_type=membership_type,
+                urgency=urgency,
+                expiry_date=expiry_date,
+                account_name=account['account_name'],
+                account_number=account['account_number'],
+                ifsc_code=account['ifsc_code'],
+                bank_name=account['bank_name'],
+                upi_id=account['upi_id']
+            )
+            
+            return formatted_message
+            
         except Exception as e:
             logger.error(f"Error creating reminder message: {e}")
             # Fallback simple message
