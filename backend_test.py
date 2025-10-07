@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Dict, Any, List
 
 class IronParadiseGymAPITester:
-    def __init__(self, base_url="https://gymflow-59.preview.emergentagent.com"):
+    def __init__(self, base_url="https://memberfittrack.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.tests_run = 0
@@ -2241,7 +2241,7 @@ class IronParadiseGymAPITester:
         """Run comprehensive reminder system tests with real Twilio credentials"""
         print("🔔 Starting WhatsApp Reminder System Tests with Real Twilio Credentials...")
         print("=" * 80)
-        print("Backend URL: https://gymflow-59.preview.emergentagent.com")
+        print("Backend URL: https://memberfittrack.preview.emergentagent.com")
         print("Twilio Account SID: AC1b43d4be1f2e1838ba35448bda02cd16")
         print("WhatsApp Business Number: +917099197780")
         print("=" * 80)
