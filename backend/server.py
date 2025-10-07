@@ -1802,37 +1802,65 @@ async def get_expiring_members_for_reminders(
 ):
     """Get list of members whose membership expires in X days"""
     try:
-        target_date = datetime.now(timezone.utc) + timedelta(days=days)
-        start_of_day = target_date.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_of_day = target_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        current_time = datetime.now(timezone.utc)
         
-        members = await db.members.find({
-            "membership_end": {
-                "$gte": start_of_day.isoformat(),
-                "$lte": end_of_day.isoformat()
-            },
-            "current_payment_status": {"$in": ["paid", "pending"]}
-        }).to_list(100)
+        if days <= 0:
+            # Get already expired members
+            members = await db.members.find({
+                "membership_end": {"$lt": current_time.isoformat()}
+            }).to_list(100)
+        else:
+            # Get members expiring within specified days
+            future_date = current_time + timedelta(days=days)
+            members = await db.members.find({
+                "$and": [
+                    {"membership_end": {"$gt": current_time.isoformat()}},
+                    {"membership_end": {"$lte": future_date.isoformat()}}
+                ]
+            }).to_list(100)
         
-        # Check reminder status for each member
+        # Clean and process members data
+        cleaned_members = []
         for member in members:
+            cleaned_member = parse_from_mongo(member.copy())
+            
+            # Calculate days left
+            if cleaned_member.get('membership_end'):
+                try:
+                    if isinstance(cleaned_member['membership_end'], str):
+                        end_date = datetime.fromisoformat(cleaned_member['membership_end'])
+                    else:
+                        end_date = cleaned_member['membership_end']
+                    
+                    days_left = (end_date - current_time).days
+                    cleaned_member['days_until_expiry'] = days_left
+                except:
+                    cleaned_member['days_until_expiry'] = 0
+            
             # Check if reminder was already sent today
             today = datetime.now(timezone.utc).date()
             reminder_sent = await db.reminder_logs.find_one({
-                "member_id": member["id"],
-                "days_before_expiry": days,
+                "member_id": cleaned_member["id"],
                 "sent_date": today.isoformat()
             })
-            member["reminder_sent_today"] = reminder_sent is not None
+            cleaned_member["reminder_sent_today"] = reminder_sent is not None
+            
+            # Ensure required fields
+            cleaned_member.setdefault('name', 'Unknown Member')
+            cleaned_member.setdefault('phone', '+91-0000000000')
+            cleaned_member.setdefault('membership_type', 'monthly')
+            
+            cleaned_members.append(cleaned_member)
         
         return {
-            "expiring_members": members,
-            "count": len(members),
+            "expiring_members": cleaned_members,
+            "count": len(cleaned_members),
             "days_until_expiry": days,
-            "target_date": target_date.strftime("%Y-%m-%d")
+            "target_date": (current_time + timedelta(days=days)).strftime("%Y-%m-%d") if days > 0 else "expired"
         }
         
     except Exception as e:
+        logger.error(f"Error fetching expiring members: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/reminders/test")
