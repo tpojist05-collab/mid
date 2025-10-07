@@ -152,11 +152,13 @@ const ReceiptManagement = () => {
           <DialogTrigger asChild>
             <Button>Create New Template</Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Create Receipt Template</DialogTitle>
             </DialogHeader>
-            <TemplateForm onSubmit={createTemplate} onCancel={() => setShowCreateDialog(false)} />
+            <div className="max-h-[70vh] overflow-y-auto pr-2">
+              <TemplateForm onSubmit={createTemplate} onCancel={() => setShowCreateDialog(false)} />
+            </div>
           </DialogContent>
         </Dialog>
       </div>
