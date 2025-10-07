@@ -26,7 +26,7 @@ const PaymentForm = ({
 }) => {
   return (
     <div className="space-y-6">
-      {!showRazorpay ? (
+      {!showRazorpay && !showPayU ? (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
