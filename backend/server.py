@@ -1873,11 +1873,14 @@ async def get_expiring_members_for_reminders(
     try:
         current_time = datetime.now(timezone.utc)
         
-        if days <= 0:
+        if days == 0:
             # Get already expired members
             members = await db.members.find({
                 "membership_end": {"$lt": current_time.isoformat()}
             }).to_list(100)
+        elif days < 0:
+            # Get all members (for debugging)
+            members = await db.members.find({}).to_list(100)
         else:
             # Get members expiring within specified days
             future_date = current_time + timedelta(days=days)
