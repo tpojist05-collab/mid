@@ -582,14 +582,31 @@ def prepare_for_mongo(data: dict) -> dict:
 
 def parse_from_mongo(item: dict) -> dict:
     """Parse data from MongoDB"""
+    if item is None:
+        return item
+        
+    # Remove MongoDB ObjectId if present
+    if '_id' in item:
+        del item['_id']
+    
+    # Convert ObjectId to string if found in any field
+    for key, value in item.items():
+        if hasattr(value, '__class__') and value.__class__.__name__ == 'ObjectId':
+            item[key] = str(value)
+    
+    # Parse dates
     datetime_fields = ['join_date', 'membership_start', 'membership_end', 'created_at', 'updated_at', 'payment_date']
     for field in datetime_fields:
         if field in item and isinstance(item[field], str):
-            item[field] = datetime.fromisoformat(item[field])
+            try:
+                item[field] = datetime.fromisoformat(item[field])
+            except:
+                pass
         elif field in item and item[field] is None:
             # Handle None values by setting a default datetime for required fields
             if field in ['join_date', 'membership_start', 'membership_end', 'created_at', 'updated_at']:
                 item[field] = datetime.now(timezone.utc)
+    
     return item
 
 # API Routes
