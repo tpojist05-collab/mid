@@ -448,11 +448,11 @@
 
 ## test_plan:
   current_focus:
-    - "Payment Expiry Logic Testing - COMPLETED ✅"
-    - "Receipt Register Testing - COMPLETED ✅"
-    - "Expired Members Detection - COMPLETED ✅"
-    - "Editable Reminder Templates - COMPLETED ✅"
-    - "Reminder Records Testing - COMPLETED ✅"
+    - "WhatsApp Migration to Direct Service - COMPLETED ✅"
+    - "Additional Indian Payment Gateways Implementation - IN PROGRESS"
+    - "PayU Integration with Frontend"
+    - "GPay Integration"
+    - "Paytm Integration"
     - "WhatsApp Migration Testing - COMPLETED ✅"
   stuck_tasks: 
     - "Receipt Register Endpoint (GET /api/receipts/register returns 404 - Not Found) - NEEDS IMPLEMENTATION"
