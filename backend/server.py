@@ -1842,8 +1842,10 @@ async def send_bulk_reminders(
 ):
     """Send WhatsApp reminders to all members expiring in X days (admin only)"""
     try:
-        if not reminder_service_instance:
-            raise HTTPException(status_code=503, detail="Reminder service not available")
+        # Use new WhatsApp service
+        whatsapp_service = get_whatsapp_service()
+        if not whatsapp_service:
+            raise HTTPException(status_code=503, detail="WhatsApp service not available")
         
         # Get members expiring in specified days
         target_date = datetime.now(timezone.utc) + timedelta(days=days_before_expiry)
@@ -1863,11 +1865,12 @@ async def send_bulk_reminders(
         
         for member in members:
             try:
-                result = await reminder_service_instance.send_manual_reminder(member['id'])
+                result = await whatsapp_service.send_reminder(member, days_before_expiry)
                 if result["success"]:
                     sent_count += 1
                 else:
                     failed_count += 1
+                    logger.warning(f"Failed to send reminder to {member.get('name', 'Unknown')}: {result.get('error', 'Unknown error')}")
             except Exception as e:
                 logger.error(f"Error sending reminder to member {member.get('name', 'Unknown')} ({member.get('id', 'Unknown')}): {e}")
                 failed_count += 1
