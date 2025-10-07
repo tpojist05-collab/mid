@@ -2178,6 +2178,11 @@ class IronParadiseGymAPITester:
 
     def test_payu_payment_creation(self):
         """Test PayU payment order creation"""
+        # Ensure we have a member ID for testing
+        if not self.created_member_id:
+            # Try to create a test member for PayU testing
+            self.test_create_member()
+            
         if not self.created_member_id:
             self.log_test("PayU Payment Creation", False, "No member ID available for testing")
             return
