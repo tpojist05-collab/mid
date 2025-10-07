@@ -67,7 +67,10 @@ const Dashboard = ({ setCurrentPage }) => {
     <div className="space-y-8 fade-in">
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="card-hover glass border-0">
+        <Card 
+          className="card-hover glass border-0 cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-blue-300 hover:scale-105"
+          onClick={() => setCurrentPage('members')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-700">
               Total Members
@@ -77,12 +80,13 @@ const Dashboard = ({ setCurrentPage }) => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-slate-800" data-testid="total-members">
+            <div className="text-3xl font-bold text-blue-600" data-testid="total-members">
               {stats?.total_members || 0}
             </div>
             <p className="text-xs text-slate-600 mt-1">
               All registered members
             </p>
+            <p className="text-xs text-blue-600 mt-1 font-medium">Click to view all members →</p>
           </CardContent>
         </Card>
 
