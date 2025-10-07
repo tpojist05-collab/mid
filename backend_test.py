@@ -2199,6 +2199,7 @@ class IronParadiseGymAPITester:
         
         print("\n🔥 CRITICAL FIXES TESTING")
         print("-" * 40)
+        self.run_critical_fixes_tests()
         self.test_critical_fixes_whatsapp_reminders()
         self.test_critical_fixes_membership_end_date()
         self.test_critical_fixes_receipt_generation()
