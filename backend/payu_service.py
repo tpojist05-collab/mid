@@ -2,7 +2,7 @@ import os
 import hashlib
 import uuid
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional
+from typing import List, Dict, Any, Optional
 import logging
 import requests
 from urllib.parse import urlencode
