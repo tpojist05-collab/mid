@@ -37,6 +37,15 @@ class ReminderService:
     def start(self):
         """Start the reminder scheduler"""
         try:
+            # Schedule frequent reminder checks every 2 hours for real-time functionality
+            self.scheduler.add_job(
+                self.check_and_send_reminders,
+                trigger=CronTrigger(minute=0, second=0),  # Every hour at minute 0
+                id='hourly_reminder_check',
+                replace_existing=True,
+                max_instances=1
+            )
+            
             # Schedule daily reminder check at 9 AM
             self.scheduler.add_job(
                 self.check_and_send_reminders,
@@ -55,8 +64,17 @@ class ReminderService:
                 max_instances=1
             )
             
+            # Initial reminder check on startup
+            self.scheduler.add_job(
+                self.check_and_send_reminders,
+                'date',
+                run_date=datetime.now(timezone.utc) + timedelta(seconds=30),
+                id='startup_reminder_check',
+                max_instances=1
+            )
+            
             self.scheduler.start()
-            logger.info("Reminder service started successfully")
+            logger.info("Real-time reminder service started successfully with hourly checks")
         except Exception as e:
             logger.error(f"Failed to start reminder service: {e}")
 
