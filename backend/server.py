@@ -2812,14 +2812,14 @@ async def clear_all_receipts(current_admin: User = Depends(require_admin_role)):
         logger.error(f"Error clearing all receipts: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.delete("/admin/clear-all-data")
+@app.post("/api/admin/clear-all-data")
 async def clear_all_application_data(
-    request: dict,
+    request_data: dict,
     current_admin: User = Depends(require_admin_role)
 ):
     """Clear ALL application data - members, payments, receipts (admin only - EXTREMELY DANGEROUS)"""
     try:
-        confirmation = request.get("confirmation", "")
+        confirmation = request_data.get("confirmation", "")
         
         # Require exact confirmation phrase
         if confirmation != "DELETE_ALL_DATA_PERMANENTLY":
@@ -2828,13 +2828,6 @@ async def clear_all_application_data(
                 detail="Invalid confirmation. Must provide exact phrase: DELETE_ALL_DATA_PERMANENTLY"
             )
         
-        # Get counts before deletion
-        member_count = await db.members.count_documents({})
-        payment_count = await db.payments.count_documents({})
-        receipt_count = await db.receipts.count_documents({})
-        earnings_count = await db.monthly_earnings.count_documents({})
-        reminder_count = await db.reminder_logs.count_documents({})
-        
         # Delete all data
         members_deleted = await db.members.delete_many({})
         payments_deleted = await db.payments.delete_many({})
@@ -2842,35 +2835,51 @@ async def clear_all_application_data(
         earnings_deleted = await db.monthly_earnings.delete_many({})
         reminders_deleted = await db.reminder_logs.delete_many({})
         
-        # Send critical notification
-        await send_system_notification(
-            "🚨 ALL DATA CLEARED - CRITICAL ACTION",
-            f"CRITICAL: ALL APPLICATION DATA DELETED by {current_admin.full_name}. Members: {member_count}, Payments: {payment_count}, Receipts: {receipt_count}, Earnings: {earnings_count}, Reminders: {reminder_count}",
-            "error"
+        total_deleted = (
+            members_deleted.deleted_count + 
+            payments_deleted.deleted_count + 
+            receipts_deleted.deleted_count + 
+            earnings_deleted.deleted_count + 
+            reminders_deleted.deleted_count
         )
         
         return {
             "message": "ALL APPLICATION DATA CLEARED SUCCESSFULLY",
-            "deleted_counts": {
-                "members": members_deleted.deleted_count,
-                "payments": payments_deleted.deleted_count,
-                "receipts": receipts_deleted.deleted_count,
-                "earnings": earnings_deleted.deleted_count,
-                "reminders": reminders_deleted.deleted_count
-            },
-            "total_deleted": (
-                members_deleted.deleted_count + 
-                payments_deleted.deleted_count + 
-                receipts_deleted.deleted_count + 
-                earnings_deleted.deleted_count + 
-                reminders_deleted.deleted_count
-            )
+            "total_deleted": total_deleted
         }
         
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error clearing all data: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/admin/clear-all-members")
+async def clear_all_members_simple(current_admin: User = Depends(require_admin_role)):
+    """Clear all members data (admin only - DANGEROUS)"""
+    try:
+        result = await db.members.delete_many({})
+        return {"message": f"Successfully cleared {result.deleted_count} members", "deleted_count": result.deleted_count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/admin/clear-all-payments")
+async def clear_all_payments_simple(current_admin: User = Depends(require_admin_role)):
+    """Clear all payments data (admin only - DANGEROUS)"""
+    try:
+        payments_result = await db.payments.delete_many({})
+        earnings_result = await db.monthly_earnings.delete_many({})
+        return {"message": f"Successfully cleared {payments_result.deleted_count} payments", "deleted_count": payments_result.deleted_count}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/admin/clear-all-receipts")
+async def clear_all_receipts_simple(current_admin: User = Depends(require_admin_role)):
+    """Clear all receipts data (admin only - DANGEROUS)"""
+    try:
+        result = await db.receipts.delete_many({})
+        return {"message": f"Successfully cleared {result.deleted_count} receipts", "deleted_count": result.deleted_count}
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/receipts/bulk-delete")
