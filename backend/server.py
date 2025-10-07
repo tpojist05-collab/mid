@@ -482,7 +482,7 @@ async def get_admission_fee() -> float:
     settings = await db.gym_settings.find_one({"setting_name": "admission_fee"})
     if settings and "amount" in settings:
         return settings["amount"]
-    return 2000.0  # Default admission fee
+    return 1500.0  # Default admission fee
 
 async def calculate_membership_extension(payment_amount: float) -> int:
     """Calculate membership extension days based on payment amount"""
