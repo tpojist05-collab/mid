@@ -10,6 +10,7 @@ import { Textarea } from './ui/textarea';
 import { apiClient } from '../App';
 import { toast } from 'sonner';
 import RazorpayPayment from './RazorpayPayment';
+import PayUPayment from './PayUPayment';
 import PaymentForm from './forms/PaymentForm';
 
 const PaymentManagement = () => {
