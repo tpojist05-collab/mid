@@ -204,16 +204,7 @@ const MemberManagement = () => {
             Activate
           </Button>
         )}
-        {member.member_status !== 'suspended' && (
-          <Button
-            size="xs"
-            variant="outline"
-            onClick={() => updateMemberStatus(member, 'suspended')}
-            className="text-red-600 border-red-200 hover:bg-red-50"
-          >
-            Suspend
-          </Button>
-        )}
+        {/* Suspend button removed as requested */}
         {member.member_status !== 'frozen' && (
           <Button
             size="xs"
