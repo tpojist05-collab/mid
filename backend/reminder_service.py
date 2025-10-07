@@ -175,30 +175,73 @@ class ReminderService:
             logger.error(f"Error sending reminder to {member['name']}: {e}")
             return False
 
-    def create_reminder_message(self, member: Dict[str, Any], days: int) -> str:
-        """Create reminder message text"""
-        membership_type = member.get('membership_type', 'monthly').replace('_', ' ').title()
-        expiry_date = datetime.fromisoformat(member['membership_end']).strftime('%d %b %Y')
-        
-        if days == 7:
-            urgency = "soon"
-        elif days == 3:
-            urgency = "very soon"
-        else:
-            urgency = "tomorrow"
-        
-        return f"""🏋️ Iron Paradise Gym Reminder
+    async def create_reminder_message(self, member: Dict[str, Any], days: int) -> str:
+        """Create reminder message text with payment details"""
+        try:
+            membership_type = member.get('membership_type', 'monthly').replace('_', ' ').title()
+            expiry_date = datetime.fromisoformat(member['membership_end']).strftime('%d %b %Y')
+            
+            if days == 7:
+                urgency = "soon"
+            elif days == 3:
+                urgency = "very soon"
+            else:
+                urgency = "tomorrow"
+            
+            # Get bank account details from database
+            try:
+                bank_settings = await self.db.gym_settings.find_one({"setting_name": "bank_account"})
+                if bank_settings and "account_details" in bank_settings:
+                    account = bank_settings["account_details"]
+                else:
+                    # Default bank account details
+                    account = {
+                        "account_name": "Electroforum",
+                        "account_number": "123456789012", 
+                        "ifsc_code": "BANK0001234",
+                        "bank_name": "State Bank of India",
+                        "upi_id": "electroforum@paytm"
+                    }
+            except Exception as e:
+                logger.error(f"Error fetching bank details: {e}")
+                account = {
+                    "account_name": "Electroforum",
+                    "account_number": "Not Available",
+                    "ifsc_code": "Not Available", 
+                    "bank_name": "Contact Admin",
+                    "upi_id": "Contact Admin"
+                }
+            
+            return f"""🏋️ Iron Paradise Gym - Membership Renewal Reminder
 
 Hi {member['name']},
 
 Your {membership_type} membership expires {urgency} on {expiry_date}.
 
-Please renew to continue enjoying our gym facilities.
+⚠️ Please renew immediately to continue enjoying our gym facilities.
 
-💳 Renew online or visit our reception.
+💳 PAYMENT OPTIONS:
 
-Thank you!
-- Iron Paradise Team"""
+🏦 Bank Transfer:
+Account Name: {account['account_name']}
+Account Number: {account['account_number']}
+IFSC Code: {account['ifsc_code']}
+Bank: {account['bank_name']}
+
+📱 UPI Payment:
+UPI ID: {account['upi_id']}
+
+📍 Or visit our gym reception for instant renewal.
+
+After payment, please share the receipt on WhatsApp or show at reception for membership activation.
+
+Thank you for choosing Iron Paradise Gym! 💪
+
+- Iron Paradise Gym Team"""
+        except Exception as e:
+            logger.error(f"Error creating reminder message: {e}")
+            # Fallback simple message
+            return f"""Hi {member['name']}, your gym membership expires soon. Please visit reception to renew. - Iron Paradise Gym"""
 
     async def send_whatsapp(self, phone_number: str, message: str) -> bool:
         """Send WhatsApp message using Twilio WhatsApp API"""
