@@ -18,7 +18,7 @@ def test_member_api():
     
     login_data = {
         "username": "goswami",
-        "password": "admin123"
+        "password": "IronParadise@2024"
     }
     
     try:
