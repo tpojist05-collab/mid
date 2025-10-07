@@ -2412,7 +2412,7 @@ async def initialize_receipt_templates():
         raise
 
 # Receipt Register Management API
-@api_router.get("/receipts")
+@app.get("/api/receipts")
 async def get_receipt_register(current_user: User = Depends(get_current_active_user)):
     """Get all stored receipts in register"""
     try:
