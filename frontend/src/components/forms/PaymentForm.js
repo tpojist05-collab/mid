@@ -233,6 +233,7 @@ const PaymentForm = ({
             onClick={() => {
               setIsAddModalOpen(false);
               setShowRazorpay(false);
+              setShowPayU(false);
               resetForm();
             }}
           >
