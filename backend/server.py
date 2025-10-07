@@ -1462,10 +1462,11 @@ async def record_payment(payment_data: PaymentCreate):
             }}
         )
         
-        # Send notification
+        # Send notification with extension details
+        member_name = current_member.get('name', 'Unknown') if current_member else 'Unknown'
         await send_system_notification(
             f"Payment recorded: ₹{payment.amount}",
-            f"Payment of ₹{payment.amount} recorded for {member['name']} via {payment.payment_method.upper()}",
+            f"Payment of ₹{payment.amount} recorded for {member_name}. Membership extended by {membership_extension} days until {new_expiry_date.strftime('%Y-%m-%d')}",
             "info"
         )
         
