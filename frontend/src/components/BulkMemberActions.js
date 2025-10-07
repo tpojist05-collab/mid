@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Checkbox } from './ui/checkbox';
+import { Label } from './ui/label';
 import { Trash2, Users, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
