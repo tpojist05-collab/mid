@@ -1790,6 +1790,218 @@ async def get_razorpay_key():
     """Get Razorpay public key for frontend"""
     return {"key_id": os.environ['RAZORPAY_KEY_ID']}
 
+# PayU Payment Routes
+@api_router.post("/payu/create-order")
+async def create_payu_order(
+    order_data: dict,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Create PayU payment order"""
+    try:
+        payu_service = get_payu_service()
+        if not payu_service:
+            raise HTTPException(status_code=503, detail="PayU service not available")
+        
+        # Verify member exists if member_id provided
+        if order_data.get("member_id"):
+            member = await db.members.find_one({"id": order_data["member_id"]})
+            if not member:
+                raise HTTPException(status_code=404, detail="Member not found")
+        
+        # Create PayU payment request
+        result = payu_service.create_payment_request(order_data)
+        
+        if result["status"] == "success":
+            # Store order in database
+            order_record = {
+                "id": str(uuid.uuid4()),
+                "txnid": result["txnid"],
+                "member_id": order_data.get("member_id", ""),
+                "amount": float(order_data["amount"]),
+                "product_info": order_data["product_info"],
+                "customer_name": order_data["customer_name"],
+                "customer_email": order_data["customer_email"],
+                "gateway": "payu",
+                "status": "created",
+                "created_at": datetime.now(timezone.utc),
+                "created_by": current_user.id
+            }
+            
+            await db.payment_orders.insert_one(order_record)
+            
+            return result
+        else:
+            raise HTTPException(status_code=400, detail=result.get("error", "Payment creation failed"))
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating PayU order: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/payu/success")
+async def payu_payment_success(request: Request):
+    """Handle PayU payment success callback"""
+    try:
+        # Get form data from PayU response
+        form_data = await request.form()
+        response_params = dict(form_data)
+        
+        payu_service = get_payu_service()
+        if not payu_service:
+            raise HTTPException(status_code=503, detail="PayU service not available")
+        
+        # Verify response hash
+        if not payu_service.verify_response_hash(response_params):
+            logger.warning(f"Invalid PayU response hash for txnid: {response_params.get('txnid')}")
+            raise HTTPException(status_code=400, detail="Invalid response hash")
+        
+        txnid = response_params.get("txnid")
+        status = response_params.get("status")
+        amount = response_params.get("amount")
+        
+        # Update payment order status
+        order = await db.payment_orders.find_one({"txnid": txnid})
+        if order:
+            update_data = {
+                "status": "success" if status == "success" else "failed",
+                "payu_payment_id": response_params.get("payuMoneyId", ""),
+                "payment_response": response_params,
+                "updated_at": datetime.now(timezone.utc)
+            }
+            
+            await db.payment_orders.update_one(
+                {"txnid": txnid},
+                {"$set": update_data}
+            )
+            
+            # If payment successful, create payment record and update member
+            if status == "success":
+                # Create payment record
+                payment_record = {
+                    "id": str(uuid.uuid4()),
+                    "member_id": order.get("member_id", ""),
+                    "amount": float(amount),
+                    "payment_method": "payu",
+                    "transaction_id": txnid,
+                    "payment_date": datetime.now(timezone.utc),
+                    "description": f"PayU payment - {order.get('product_info', 'Gym membership')}",
+                    "status": "completed"
+                }
+                
+                await db.payments.insert_one(payment_record)
+                
+                # Update member payment status if member_id exists
+                if order.get("member_id"):
+                    await update_member_payment_status(order["member_id"], float(amount))
+        
+        # Redirect to frontend success page
+        frontend_url = os.environ.get('REACT_APP_FRONTEND_URL', 'http://localhost:3000')
+        success_url = f"{frontend_url}/payment/success?txnid={txnid}&status={status}&gateway=payu"
+        
+        return {"redirect_url": success_url, "status": "success", "txnid": txnid}
+        
+    except Exception as e:
+        logger.error(f"Error processing PayU success: {e}")
+        frontend_url = os.environ.get('REACT_APP_FRONTEND_URL', 'http://localhost:3000')
+        failure_url = f"{frontend_url}/payment/failure?error=processing_error&gateway=payu"
+        return {"redirect_url": failure_url, "status": "error", "error": str(e)}
+
+@api_router.post("/payu/failure")
+async def payu_payment_failure(request: Request):
+    """Handle PayU payment failure callback"""
+    try:
+        # Get form data from PayU response
+        form_data = await request.form()
+        response_params = dict(form_data)
+        
+        txnid = response_params.get("txnid")
+        status = response_params.get("status") 
+        error_message = response_params.get("error_Message", "Payment failed")
+        
+        # Update payment order status
+        if txnid:
+            await db.payment_orders.update_one(
+                {"txnid": txnid},
+                {"$set": {
+                    "status": "failed",
+                    "error_message": error_message,
+                    "payment_response": response_params,
+                    "updated_at": datetime.now(timezone.utc)
+                }}
+            )
+        
+        # Redirect to frontend failure page
+        frontend_url = os.environ.get('REACT_APP_FRONTEND_URL', 'http://localhost:3000')
+        failure_url = f"{frontend_url}/payment/failure?txnid={txnid}&status={status}&error={error_message}&gateway=payu"
+        
+        return {"redirect_url": failure_url, "status": "failed", "txnid": txnid}
+        
+    except Exception as e:
+        logger.error(f"Error processing PayU failure: {e}")
+        frontend_url = os.environ.get('REACT_APP_FRONTEND_URL', 'http://localhost:3000')
+        failure_url = f"{frontend_url}/payment/failure?error=processing_error&gateway=payu"
+        return {"redirect_url": failure_url, "status": "error"}
+
+@api_router.post("/payu/verify-payment")
+async def verify_payu_payment(
+    verification_data: dict,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Verify PayU payment status"""
+    try:
+        payu_service = get_payu_service()
+        if not payu_service:
+            raise HTTPException(status_code=503, detail="PayU service not available")
+        
+        txnid = verification_data.get("txnid")
+        if not txnid:
+            raise HTTPException(status_code=400, detail="Transaction ID required")
+        
+        # Verify payment with PayU
+        result = payu_service.verify_payment(txnid)
+        
+        if result["status"] == "success":
+            # Get order from database
+            order = await db.payment_orders.find_one({"txnid": txnid})
+            
+            return {
+                "status": "success",
+                "txnid": txnid,
+                "verification_result": result["verification_data"],
+                "order_data": order,
+                "gateway": "payu"
+            }
+        else:
+            return {
+                "status": "error",
+                "error": result.get("error", "Verification failed"),
+                "gateway": "payu"
+            }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error verifying PayU payment: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/payu/info")
+async def get_payu_info():
+    """Get PayU gateway information"""
+    try:
+        payu_service = get_payu_service()
+        if not payu_service:
+            return {"available": False, "error": "PayU service not configured"}
+        
+        return {
+            "available": True,
+            "gateway_info": payu_service.get_gateway_info()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting PayU info: {e}")
+        return {"available": False, "error": str(e)}
+
 # Enhanced Reminder Management
 @api_router.post("/reminders/send/{member_id}")
 async def send_reminder_to_member(
