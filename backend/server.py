@@ -1693,7 +1693,7 @@ async def get_member_reminder_history(
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/reminders/expiring-members")
-async def get_expiring_members_for_reminders(
+async def get_expiring_members(
     days: int = 7,
     current_user: User = Depends(get_current_active_user)
 ):
