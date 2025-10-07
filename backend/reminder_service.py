@@ -152,7 +152,7 @@ class ReminderService:
     async def send_reminder(self, member: Dict[str, Any], days: int) -> bool:
         """Send reminder to member via WhatsApp and SMS"""
         try:
-            message = self.create_reminder_message(member, days)
+            message = await self.create_reminder_message(member, days)
             
             # Try WhatsApp first
             if self.twilio_client:
