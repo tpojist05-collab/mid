@@ -120,7 +120,10 @@ const Dashboard = ({ setCurrentPage }) => {
           </CardContent>
         </Card>
 
-        <Card className="card-hover glass border-0">
+        <Card 
+          className="card-hover glass border-0 cursor-pointer hover:shadow-lg transition-all duration-200 hover:border-orange-300 hover:scale-105"
+          onClick={() => setCurrentPage('payments')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-700">
               Pending Payments
@@ -136,6 +139,7 @@ const Dashboard = ({ setCurrentPage }) => {
             <p className="text-xs text-slate-600 mt-1">
               Awaiting payment
             </p>
+            <p className="text-xs text-orange-600 mt-1 font-medium">Click to manage payments →</p>
           </CardContent>
         </Card>
 
