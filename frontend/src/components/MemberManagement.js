@@ -12,6 +12,8 @@ import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import MemberForm from './forms/MemberForm';
 import MemberStartDateManager from './MemberStartDateManager';
+import MemberEndDateManager from './MemberEndDateManager';
+import BulkMemberActions from './BulkMemberActions';
 
 const MemberManagement = () => {
   const [members, setMembers] = useState([]);
