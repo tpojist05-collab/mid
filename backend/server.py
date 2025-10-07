@@ -1135,6 +1135,59 @@ async def update_member_start_date(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.put("/members/{member_id}/end-date")
+async def update_member_end_date(
+    member_id: str,
+    date_data: dict,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Update member's membership end date directly"""
+    try:
+        existing_member = await db.members.find_one({"id": member_id})
+        if not existing_member:
+            raise HTTPException(status_code=404, detail="Member not found")
+        
+        new_end_date = date_data.get("end_date")
+        if not new_end_date:
+            raise HTTPException(status_code=400, detail="End date is required")
+        
+        # Parse the new end date
+        if isinstance(new_end_date, str):
+            try:
+                new_end_date = datetime.fromisoformat(new_end_date.replace('Z', '+00:00'))
+            except ValueError:
+                raise HTTPException(status_code=400, detail="Invalid date format")
+        
+        # Update member record
+        update_data = {
+            'membership_end': new_end_date.isoformat(),
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        }
+        
+        await db.members.update_one(
+            {"id": member_id},
+            {"$set": update_data}
+        )
+        
+        # Send notification
+        await send_system_notification(
+            "Member end date updated",
+            f"'{existing_member.get('name')}' membership end date changed to {new_end_date.strftime('%Y-%m-%d')} by {current_user.full_name}",
+            "info"
+        )
+        
+        return {
+            "message": "Member end date updated successfully",
+            "member_id": member_id,
+            "old_end_date": existing_member.get('membership_end'),
+            "new_end_date": new_end_date.isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.delete("/members/{member_id}")
 async def delete_member(member_id: str, current_user: User = Depends(get_current_active_user)):
     try:
