@@ -15,6 +15,7 @@ const Navigation = ({ currentPage, setCurrentPage, isAdmin }) => {
       { id: 'earnings', label: 'Earnings', icon: '💰' },
       { id: 'users', label: 'Users', icon: '👤' },
       { id: 'receipts', label: 'Receipts', icon: '🧾' },
+      { id: 'data-management', label: 'Data Management', icon: '🗂️' },
       { id: 'settings', label: 'Settings', icon: '⚙️' }
     );
   }
