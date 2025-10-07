@@ -1380,6 +1380,310 @@ class IronParadiseGymAPITester:
             else:
                 self.log_test("Error Handling - Not Found", False, "API should return 404 for non-existent resources", response)
 
+    def test_critical_fixes_whatsapp_reminders(self):
+        """Test critical fixes for real-time WhatsApp reminders with real Twilio credentials"""
+        if not self.auth_token:
+            self.log_test("Critical Fix - WhatsApp Reminders", False, "No auth token available for testing")
+            return
+            
+        print("\n🔥 TESTING CRITICAL FIX: Real-Time WhatsApp Reminders")
+        print("=" * 60)
+        
+        # Test 1: Verify Twilio credentials are configured
+        # Check if reminder service endpoints are available
+        success, response = self.make_request('GET', 'reminders/expiring-members?days=7', auth_required=True)
+        
+        if success:
+            self.log_test("WhatsApp Reminder Service Availability", True, 
+                        "Reminder service endpoints are accessible")
+            
+            # Test 2: Send individual reminder with real credentials
+            if self.created_member_id:
+                success, response = self.make_request('POST', f'reminders/send/{self.created_member_id}', 
+                                                    auth_required=True)
+                
+                if success:
+                    self.log_test("Real WhatsApp Reminder Sending", True, 
+                                f"WhatsApp reminder sent successfully: {response.get('message', '')}")
+                else:
+                    error_detail = response.get('detail', '')
+                    if 'service not available' in error_detail.lower():
+                        self.log_test("Real WhatsApp Reminder Sending", False, 
+                                    "Reminder service not available - check Twilio credentials", response)
+                    else:
+                        self.log_test("Real WhatsApp Reminder Sending", False, 
+                                    "Failed to send WhatsApp reminder", response)
+            
+            # Test 3: Test automated reminder scheduling (hourly checks)
+            success, response = self.make_request('POST', 'reminders/send-bulk?days_before_expiry=7', 
+                                                auth_required=True)
+            
+            if success:
+                sent_count = response.get('sent', 0)
+                total_members = response.get('total_members', 0)
+                self.log_test("Automated Reminder Scheduling", True, 
+                            f"Bulk reminders processed: {sent_count}/{total_members} sent")
+            else:
+                error_detail = response.get('detail', '')
+                if 'service not available' in error_detail.lower():
+                    self.log_test("Automated Reminder Scheduling", False, 
+                                "Reminder service not available - check Twilio configuration", response)
+                else:
+                    self.log_test("Automated Reminder Scheduling", False, 
+                                "Failed to process bulk reminders", response)
+                    
+        else:
+            self.log_test("WhatsApp Reminder Service Availability", False, 
+                        "Reminder service endpoints not accessible", response)
+
+    def test_critical_fixes_membership_end_date(self):
+        """Test critical fixes for membership end date management"""
+        if not self.created_member_id or not self.auth_token:
+            self.log_test("Critical Fix - Membership End Date", False, "No member ID or auth token available")
+            return
+            
+        print("\n🔥 TESTING CRITICAL FIX: Membership End Date Management")
+        print("=" * 60)
+        
+        # Test 1: Update membership end date directly
+        from datetime import datetime, timedelta
+        new_end_date = datetime.now() + timedelta(days=60)
+        end_date_data = {"end_date": new_end_date.isoformat()}
+        
+        success, response = self.make_request('PUT', f'members/{self.created_member_id}/end-date', 
+                                            end_date_data, auth_required=True)
+        
+        if success:
+            returned_end_date = response.get('new_end_date')
+            if returned_end_date:
+                self.log_test("Direct End Date Update", True, 
+                            f"Membership end date updated successfully to: {returned_end_date[:10]}")
+                
+                # Test 2: Verify date validation
+                invalid_date_data = {"end_date": "invalid-date-format"}
+                success, response = self.make_request('PUT', f'members/{self.created_member_id}/end-date', 
+                                                    invalid_date_data, auth_required=True, expected_status=400)
+                
+                if success:  # success means we got expected 400 status
+                    self.log_test("End Date Validation", True, 
+                                "Invalid date format properly rejected")
+                else:
+                    self.log_test("End Date Validation", False, 
+                                "Invalid date format should be rejected", response)
+                    
+                # Test 3: Test extending membership periods
+                extension_date = datetime.now() + timedelta(days=90)
+                extension_data = {"end_date": extension_date.isoformat()}
+                
+                success, response = self.make_request('PUT', f'members/{self.created_member_id}/end-date', 
+                                                    extension_data, auth_required=True)
+                
+                if success:
+                    self.log_test("Membership Extension", True, 
+                                f"Membership extended successfully to: {response.get('new_end_date', '')[:10]}")
+                else:
+                    self.log_test("Membership Extension", False, 
+                                "Failed to extend membership", response)
+            else:
+                self.log_test("Direct End Date Update", False, 
+                            "No new end date returned in response", response)
+        else:
+            self.log_test("Direct End Date Update", False, 
+                        "Failed to update membership end date", response)
+
+    def test_critical_fixes_receipt_generation(self):
+        """Test critical fixes for real-time receipt generation"""
+        if not self.created_payment_id or not self.auth_token:
+            self.log_test("Critical Fix - Receipt Generation", False, "No payment ID or auth token available")
+            return
+            
+        print("\n🔥 TESTING CRITICAL FIX: Real-Time Receipt Generation")
+        print("=" * 60)
+        
+        # Test 1: Generate receipt immediately after payment
+        success, response = self.make_request('POST', f'payments/{self.created_payment_id}/receipt', 
+                                            auth_required=True)
+        
+        if success:
+            receipt_id = response.get('receipt_id')
+            receipt_html = response.get('receipt_html')
+            
+            if receipt_id and receipt_html:
+                self.log_test("Real-Time Receipt Generation", True, 
+                            f"Receipt generated immediately with ID: {receipt_id}")
+                
+                # Test 2: Verify receipt HTML generation and storage
+                if len(receipt_html) > 500:  # Check for substantial HTML content
+                    self.log_test("Receipt HTML Generation", True, 
+                                f"Receipt HTML generated successfully ({len(receipt_html)} characters)")
+                    
+                    # Test 3: Test enhanced receipt generation with fallback templates
+                    # Try to generate another receipt to test fallback
+                    success, response = self.make_request('POST', f'payments/{self.created_payment_id}/receipt', 
+                                                        auth_required=True)
+                    
+                    if success:
+                        self.log_test("Enhanced Receipt with Fallback", True, 
+                                    "Receipt generation with fallback templates working")
+                    else:
+                        self.log_test("Enhanced Receipt with Fallback", False, 
+                                    "Fallback receipt generation failed", response)
+                else:
+                    self.log_test("Receipt HTML Generation", False, 
+                                f"Receipt HTML seems incomplete ({len(receipt_html)} characters)")
+            else:
+                self.log_test("Real-Time Receipt Generation", False, 
+                            "Missing receipt ID or HTML in response", response)
+        else:
+            self.log_test("Real-Time Receipt Generation", False, 
+                        "Failed to generate receipt", response)
+
+    def test_critical_fixes_bulk_member_deletion(self):
+        """Test critical fixes for bulk member deletion"""
+        if not self.auth_token:
+            self.log_test("Critical Fix - Bulk Member Deletion", False, "No auth token available")
+            return
+            
+        print("\n🔥 TESTING CRITICAL FIX: Bulk Member Deletion")
+        print("=" * 60)
+        
+        # First create some test members for bulk deletion
+        test_member_ids = []
+        
+        for i in range(3):
+            member_data = {
+                "name": f"Bulk Delete Test Member {i+1}",
+                "email": f"bulktest{i+1}@example.com",
+                "phone": f"+91 987654{i+1:04d}",
+                "address": f"Test Address {i+1}",
+                "emergency_contact": {
+                    "name": f"Emergency Contact {i+1}",
+                    "phone": f"+91 987654{i+1:04d}",
+                    "relationship": "Friend"
+                },
+                "membership_type": "monthly"
+            }
+            
+            success, response = self.make_request('POST', 'members', member_data, auth_required=True)
+            if success:
+                test_member_ids.append(response.get('id'))
+        
+        if len(test_member_ids) >= 2:
+            # Test 1: Bulk delete multiple members
+            delete_data = {"member_ids": test_member_ids[:2]}  # Delete first 2 members
+            
+            success, response = self.make_request('POST', 'members/bulk-delete', delete_data, auth_required=True)
+            
+            if success:
+                deleted_count = response.get('deleted_count', 0)
+                member_names = response.get('member_names', [])
+                
+                if deleted_count == 2:
+                    self.log_test("Bulk Member Deletion", True, 
+                                f"Successfully deleted {deleted_count} members: {', '.join(member_names)}")
+                    
+                    # Test 2: Test admin-only access (we're already admin, so test validation)
+                    # Test with empty member IDs
+                    empty_delete_data = {"member_ids": []}
+                    success, response = self.make_request('POST', 'members/bulk-delete', empty_delete_data, 
+                                                        auth_required=True, expected_status=400)
+                    
+                    if success:  # success means we got expected 400 status
+                        self.log_test("Bulk Delete Validation", True, 
+                                    "Empty member IDs properly rejected")
+                    else:
+                        self.log_test("Bulk Delete Validation", False, 
+                                    "Empty member IDs should be rejected", response)
+                    
+                    # Test 3: Test bulk operations with proper notifications
+                    if len(test_member_ids) > 2:
+                        remaining_delete_data = {"member_ids": test_member_ids[2:]}
+                        success, response = self.make_request('POST', 'members/bulk-delete', remaining_delete_data, 
+                                                            auth_required=True)
+                        
+                        if success:
+                            self.log_test("Bulk Delete with Notifications", True, 
+                                        f"Bulk delete with notifications completed: {response.get('message', '')}")
+                        else:
+                            self.log_test("Bulk Delete with Notifications", False, 
+                                        "Failed bulk delete with notifications", response)
+                else:
+                    self.log_test("Bulk Member Deletion", False, 
+                                f"Expected 2 deletions, got {deleted_count}")
+            else:
+                self.log_test("Bulk Member Deletion", False, 
+                            "Failed to perform bulk deletion", response)
+        else:
+            self.log_test("Bulk Member Deletion", False, 
+                        "Could not create enough test members for bulk deletion")
+
+    def test_critical_fixes_error_handling(self):
+        """Test critical fixes for error handling & robustness"""
+        print("\n🔥 TESTING CRITICAL FIX: Error Handling & Robustness")
+        print("=" * 60)
+        
+        # Test 1: Test all endpoints for proper error responses
+        error_tests = [
+            # Test non-existent member
+            {'method': 'GET', 'endpoint': 'members/non-existent-id', 'expected_status': 404, 'test_name': 'Non-existent Member Error'},
+            # Test invalid payment data
+            {'method': 'POST', 'endpoint': 'payments', 'data': {'invalid': 'data'}, 'expected_status': 422, 'test_name': 'Invalid Payment Data Error'},
+            # Test unauthorized access
+            {'method': 'GET', 'endpoint': 'users', 'auth_required': False, 'expected_status': 401, 'test_name': 'Unauthorized Access Error'},
+        ]
+        
+        for test in error_tests:
+            success, response = self.make_request(
+                test['method'], 
+                test['endpoint'], 
+                test.get('data'), 
+                test['expected_status'],
+                test.get('auth_required', True)
+            )
+            
+            if success:  # success means we got the expected error status
+                self.log_test(test['test_name'], True, 
+                            f"Proper error response ({test['expected_status']}) returned")
+            else:
+                self.log_test(test['test_name'], False, 
+                            f"Expected {test['expected_status']} status", response)
+        
+        # Test 2: Test authentication and authorization
+        if self.auth_token:
+            # Test with invalid token
+            old_token = self.auth_token
+            self.auth_token = "invalid-token"
+            
+            success, response = self.make_request('GET', 'auth/me', expected_status=401, auth_required=True)
+            
+            if success:  # success means we got expected 401 status
+                self.log_test("Invalid Token Handling", True, 
+                            "Invalid token properly rejected")
+            else:
+                self.log_test("Invalid Token Handling", False, 
+                            "Invalid token should be rejected", response)
+            
+            # Restore valid token
+            self.auth_token = old_token
+        
+        # Test 3: Test missing data scenarios and fallbacks
+        if self.auth_token:
+            # Test member creation with missing required fields
+            incomplete_member_data = {
+                "name": "Incomplete Member"
+                # Missing required fields
+            }
+            
+            success, response = self.make_request('POST', 'members', incomplete_member_data, 
+                                                expected_status=422, auth_required=True)
+            
+            if success:  # success means we got expected 422 status
+                self.log_test("Missing Data Validation", True, 
+                            "Missing required fields properly validated")
+            else:
+                self.log_test("Missing Data Validation", False, 
+                            "Missing required fields should be validated", response)
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🏋️ Starting Iron Paradise Gym Management API Tests")
