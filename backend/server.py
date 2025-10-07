@@ -2540,6 +2540,13 @@ async def startup_event():
         reminder_service_instance.start()
         logger.info("Reminder service started successfully")
         
+        # Initialize WhatsApp service
+        whatsapp_service = await initialize_whatsapp_service(db)
+        if whatsapp_service:
+            logger.info("WhatsApp service initialized successfully")
+        else:
+            logger.warning("Failed to initialize WhatsApp service")
+        
     except Exception as e:
         logger.error(f"Failed to start services: {e}")
 
