@@ -1862,10 +1862,14 @@ async def send_bulk_reminders(
         failed_count = 0
         
         for member in members:
-            result = await reminder_service_instance.send_manual_reminder(member['id'])
-            if result["success"]:
-                sent_count += 1
-            else:
+            try:
+                result = await reminder_service_instance.send_manual_reminder(member['id'])
+                if result["success"]:
+                    sent_count += 1
+                else:
+                    failed_count += 1
+            except Exception as e:
+                logger.error(f"Error sending reminder to member {member.get('name', 'Unknown')} ({member.get('id', 'Unknown')}): {e}")
                 failed_count += 1
         
         # Send notification
