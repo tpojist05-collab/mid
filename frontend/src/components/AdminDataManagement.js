@@ -98,12 +98,10 @@ const AdminDataManagement = () => {
 
     try {
       setLoading(true);
-      const response = await axios.delete(
+      const response = await axios.post(
         `${process.env.REACT_APP_BACKEND_URL}/api/admin/clear-all-data`,
-        { 
-          headers: { Authorization: `Bearer ${token}` },
-          data: { confirmation: confirmationText }
-        }
+        { confirmation: confirmationText },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       
       toast.success(`All application data cleared! Total deleted: ${response.data.total_deleted} records`);
