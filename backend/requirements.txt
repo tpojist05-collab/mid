@@ -41,12 +41,14 @@ packaging==25.0
 pandas==2.3.3
 passlib==1.7.4
 pathspec==0.12.1
+payu-sdk==1.2.0
 platformdirs==4.4.0
 pluggy==1.6.0
 propcache==0.4.0
 pyasn1==0.6.1
 pycodestyle==2.14.0
 pycparser==2.23
+pycryptodome==3.23.0
 pydantic==2.11.9
 pydantic_core==2.33.2
 pyflakes==3.4.0
