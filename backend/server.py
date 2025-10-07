@@ -1923,11 +1923,23 @@ async def get_member_reminder_history(
     current_user: User = Depends(get_current_active_user)
 ):
     try:
-        if not reminder_service_instance:
-            raise HTTPException(status_code=503, detail="Reminder service not available")
+        # Use new WhatsApp service for reminder history
+        whatsapp_service = get_whatsapp_service()
+        if not whatsapp_service:
+            raise HTTPException(status_code=503, detail="WhatsApp service not available")
         
-        history = await reminder_service_instance.get_reminder_history(member_id)
-        return history
+        history = await whatsapp_service.get_reminder_history(member_id)
+        
+        # Clean history data for serialization
+        cleaned_history = []
+        for log in history:
+            cleaned_log = parse_from_mongo(log.copy())
+            # Convert datetime to string if needed
+            if isinstance(cleaned_log.get('sent_at'), datetime):
+                cleaned_log['sent_at'] = cleaned_log['sent_at'].isoformat()
+            cleaned_history.append(cleaned_log)
+        
+        return cleaned_history
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
