@@ -1839,6 +1839,60 @@ async def create_payu_order(
         logger.error(f"Error creating PayU order: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+async def update_member_payment_status(member_id: str, amount: float):
+    """Update member payment status and extend membership"""
+    try:
+        # Update monthly earnings
+        payment_dict = {
+            "member_id": member_id,
+            "amount": amount,
+            "payment_method": "payu",
+            "payment_date": datetime.now(timezone.utc)
+        }
+        await update_monthly_earnings(payment_dict)
+        
+        # Calculate membership extension based on payment amount
+        membership_extension = await calculate_membership_extension(amount)
+        
+        # Get current member data
+        current_member = await db.members.find_one({"id": member_id})
+        current_end_date = datetime.now(timezone.utc)
+        
+        # Use existing end date if membership is still active, otherwise start from today
+        if current_member and current_member.get('membership_end'):
+            try:
+                existing_end_date = datetime.fromisoformat(current_member['membership_end'])
+                if existing_end_date > datetime.now(timezone.utc):
+                    current_end_date = existing_end_date
+            except (ValueError, TypeError):
+                pass
+        
+        # Calculate new expiry date
+        new_expiry_date = current_end_date + timedelta(days=membership_extension)
+        
+        # Update member status and expiry
+        await db.members.update_one(
+            {"id": member_id},
+            {"$set": {
+                "current_payment_status": "paid",
+                "member_status": "active",
+                "membership_end": new_expiry_date.isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        # Send notification with extension details
+        member_name = current_member.get('name', 'Unknown') if current_member else 'Unknown'
+        await send_system_notification(
+            f"PayU Payment Success: ₹{amount}",
+            f"PayU payment of ₹{amount} recorded for {member_name}. Membership extended by {membership_extension} days until {new_expiry_date.strftime('%Y-%m-%d')}",
+            "info"
+        )
+        
+    except Exception as e:
+        logger.error(f"Error updating member payment status: {e}")
+        raise
+
 @api_router.post("/payu/success")
 async def payu_payment_success(request: Request):
     """Handle PayU payment success callback"""
