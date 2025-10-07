@@ -1796,38 +1796,37 @@ async def send_reminder_to_member(
     current_user: User = Depends(get_current_active_user)
 ):
     try:
-        if not reminder_service_instance:
-            raise HTTPException(status_code=503, detail="Reminder service not available")
+        # Use new WhatsApp service
+        whatsapp_service = get_whatsapp_service()
+        if not whatsapp_service:
+            raise HTTPException(status_code=503, detail="WhatsApp service not available")
         
-        result = await reminder_service_instance.send_manual_reminder(member_id)
+        # Get member details
+        member = await db.members.find_one({"id": member_id})
+        if not member:
+            raise HTTPException(status_code=404, detail="Member not found")
+        
+        # Calculate days until expiry
+        expiry_date = datetime.fromisoformat(member['membership_end'])
+        if expiry_date.tzinfo is None:
+            expiry_date = expiry_date.replace(tzinfo=timezone.utc)
+        days_until_expiry = max(0, (expiry_date - datetime.now(timezone.utc)).days)
+        
+        # Send WhatsApp reminder using new service
+        result = await whatsapp_service.send_reminder(member, days_until_expiry)
         
         if result["success"]:
-            # Get member details
-            member = await db.members.find_one({"id": member_id})
-            
-            # Store reminder record
-            reminder_record = {
-                "id": str(uuid.uuid4()),
-                "member_id": member_id,
-                "member_name": member['name'] if member else 'Unknown',
-                "member_phone": member.get('phone', '') if member else '',
-                "message_sent": result.get("message_content", ""),
-                "sent_by": current_user.id,
-                "sent_by_name": current_user.full_name,
-                "sent_at": datetime.now(timezone.utc),
-                "method": "whatsapp",
-                "status": "sent"
-            }
-            
-            await db.reminder_logs.insert_one(reminder_record)
-            
             # Send notification about manual reminder
             await send_system_notification(
                 "Manual reminder sent",
-                f"WhatsApp reminder sent to {member['name'] if member else 'member'} by {current_user.full_name}",
+                f"WhatsApp reminder link created for {member['name']} by {current_user.full_name}",
                 "info"
             )
-            return {"message": result["message"]}
+            return {
+                "message": result["message"],
+                "whatsapp_link": result["whatsapp_link"],
+                "phone": result["phone"]
+            }
         else:
             raise HTTPException(status_code=400, detail=result["error"])
             
