@@ -168,32 +168,59 @@ const PaymentForm = ({
       ) : (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h4 className="font-medium text-slate-800">Online Payment</h4>
+            <h4 className="font-medium text-slate-800">
+              {showRazorpay ? 'Razorpay Payment' : 'PayU Payment'}
+            </h4>
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setShowRazorpay(false)}
+              onClick={() => {
+                setShowRazorpay(false);
+                setShowPayU(false);
+              }}
             >
               ← Back to Payment Options
             </Button>
           </div>
           
           {selectedMemberForPayment && (
-            <RazorpayPayment
-              member={selectedMemberForPayment}
-              amount={parseFloat(formData.amount)}
-              description={formData.description}
-              onSuccess={(response) => {
-                toast.success('Payment completed successfully!');
-                setIsAddModalOpen(false);
-                setShowRazorpay(false);
-                // fetchPaymentsAndMembers(); // This would need to be passed as prop
-                resetForm();
-              }}
-              onError={(error) => {
-                console.error('Payment error:', error);
-              }}
-            />
+            <>
+              {showRazorpay && (
+                <RazorpayPayment
+                  member={selectedMemberForPayment}
+                  amount={parseFloat(formData.amount)}
+                  description={formData.description}
+                  onSuccess={(response) => {
+                    toast.success('Razorpay payment completed successfully!');
+                    setIsAddModalOpen(false);
+                    setShowRazorpay(false);
+                    resetForm();
+                  }}
+                  onError={(error) => {
+                    console.error('Razorpay payment error:', error);
+                    toast.error('Payment failed. Please try again.');
+                  }}
+                />
+              )}
+              
+              {showPayU && (
+                <PayUPayment
+                  memberData={selectedMemberForPayment}
+                  amount={parseFloat(formData.amount)}
+                  productInfo={formData.description}
+                  onSuccess={(response) => {
+                    toast.success('PayU payment completed successfully!');
+                    setIsAddModalOpen(false);
+                    setShowPayU(false);
+                    resetForm();
+                  }}
+                  onError={(error) => {
+                    console.error('PayU payment error:', error);
+                    toast.error(`Payment failed: ${error}`);
+                  }}
+                />
+              )}
+            </>
           )}
         </div>
       )}
