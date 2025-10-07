@@ -103,7 +103,9 @@ async def test_member_expiry_logic():
             
             # Check if member is expired
             if member_obj.get('membership_end'):
-                membership_end = datetime.fromisoformat(member_obj['membership_end'])
+                membership_end = member_obj['membership_end']
+                if isinstance(membership_end, str):
+                    membership_end = datetime.fromisoformat(membership_end)
                 if membership_end < current_time:
                     current_status = member_obj.get('current_payment_status', '')
                     if current_status != 'expired':
