@@ -432,18 +432,16 @@
 
 ## test_plan:
   current_focus:
-    - "New Features Testing - COMPLETED"
-    - "Interactive Dashboard Cards - COMPLETED"
-    - "Member Management Enhancements - COMPLETED"
-    - "WhatsApp Reminders with Bank Details - COMPLETED"
-    - "Receipt Storage System - COMPLETED"
-    - "Notification Management - COMPLETED"
+    - "MongoDB ObjectId Serialization Fix Verification - COMPLETED"
+    - "Critical API Endpoints Testing - COMPLETED"
+    - "Receipt Generation System - COMPLETED"
+    - "Authentication & Authorization - COMPLETED"
   stuck_tasks: 
-    - "MongoDB ObjectId Serialization Issues (/api/members and /api/reminders/history endpoints - Minor Issue)"
-    - "Razorpay Order Creation (Authentication Issues - Expected with Test Credentials)"
-    - "Receipt Template Listing (MongoDB ObjectId Serialization - Minor Issue)"
+    - "Receipt Templates Endpoint (MongoDB ObjectId Serialization - /api/receipts/templates returns 500)"
+    - "Reminder History Endpoint (MongoDB ObjectId Serialization - /api/reminders/history returns 500)"
+    - "Receipts Register Endpoint (Routing Issue - /api/receipts returns 404, defined after app.include_router)"
   test_all: true
-  test_priority: "new_features_testing_complete"
+  test_priority: "objectid_serialization_verification_complete"
 
 ## agent_communication:
     - agent: "main"
