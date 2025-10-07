@@ -345,22 +345,57 @@ const MemberManagement = () => {
               variant={viewMode === 'all' ? 'default' : 'outline'}
               onClick={() => setViewMode('all')}
               className={viewMode === 'all' ? 'bg-gradient-to-r from-blue-600 to-indigo-600' : ''}
+              data-filter="all"
             >
-              All Members ({members.length})
+              All ({members.length})
             </Button>
             <Button
               variant={viewMode === 'active' ? 'default' : 'outline'}
               onClick={() => setViewMode('active')}
               className={viewMode === 'active' ? 'bg-gradient-to-r from-green-600 to-emerald-600' : ''}
+              data-filter="active"
             >
-              Active ({members.filter(m => m.member_status === 'active' && m.current_payment_status === 'paid').length})
+              Active ({members.filter(m => m.current_payment_status === 'active' || m.current_payment_status === 'paid').length})
+            </Button>
+            <Button
+              variant={viewMode === 'expired' ? 'default' : 'outline'}
+              onClick={() => setViewMode('expired')}
+              className={viewMode === 'expired' ? 'bg-gradient-to-r from-red-600 to-rose-600' : ''}
+            >
+              Expired ({members.filter(m => m.current_payment_status === 'expired').length})
+            </Button>
+            <Button
+              variant={viewMode === 'expiring_7days' ? 'default' : 'outline'}
+              onClick={() => setViewMode('expiring_7days')}
+              className={viewMode === 'expiring_7days' ? 'bg-gradient-to-r from-orange-600 to-amber-600' : ''}
+            >
+              Expiring (7 days) ({members.filter(m => {
+                if (!m.membership_end) return false;
+                const endDate = new Date(m.membership_end);
+                const now = new Date();
+                const diffDays = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+                return diffDays > 0 && diffDays <= 7;
+              }).length})
+            </Button>
+            <Button
+              variant={viewMode === 'expiring_30days' ? 'default' : 'outline'}
+              onClick={() => setViewMode('expiring_30days')}
+              className={viewMode === 'expiring_30days' ? 'bg-gradient-to-r from-yellow-600 to-amber-600' : ''}
+            >
+              Expiring (30 days) ({members.filter(m => {
+                if (!m.membership_end) return false;
+                const endDate = new Date(m.membership_end);
+                const now = new Date();
+                const diffDays = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+                return diffDays > 0 && diffDays <= 30;
+              }).length})
             </Button>
             <Button
               variant={viewMode === 'inactive' ? 'default' : 'outline'}
               onClick={() => setViewMode('inactive')}
               className={viewMode === 'inactive' ? 'bg-gradient-to-r from-gray-600 to-slate-600' : ''}
             >
-              Inactive ({members.filter(m => m.member_status !== 'active' || m.current_payment_status !== 'paid').length})
+              Inactive ({members.filter(m => m.current_payment_status === 'inactive' || m.current_payment_status === 'suspended').length})
             </Button>
           </div>
         </CardContent>
