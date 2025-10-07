@@ -195,10 +195,11 @@ Thank you!
                 else:
                     clean_phone = '+91' + clean_phone
             
-            # Send WhatsApp message via Twilio
+            # Send WhatsApp message via Twilio using business number
+            whatsapp_from = os.environ.get('TWILIO_WHATSAPP_FROM', f'whatsapp:{os.environ.get("WHATSAPP_BUSINESS_NUMBER", "+917099197780")}')
             message_instance = self.twilio_client.messages.create(
                 body=message,
-                from_=os.environ.get('TWILIO_WHATSAPP_FROM', 'whatsapp:+14155238886'),
+                from_=whatsapp_from,
                 to=f'whatsapp:{clean_phone}'
             )
             
