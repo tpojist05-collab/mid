@@ -1048,12 +1048,27 @@ async def get_members(
                         membership_end = member_obj['membership_end']
                         
                     if membership_end < current_time:
-                        # Member is expired - update status
+                        # Member is expired - update status to expired and inactive
                         await db.members.update_one(
                             {"id": member_obj['id']},
-                            {"$set": {"current_payment_status": "expired"}}
+                            {"$set": {
+                                "current_payment_status": "expired",
+                                "member_status": "inactive"
+                            }}
                         )
                         member_obj['current_payment_status'] = "expired"
+                        member_obj['member_status'] = "inactive"
+                    elif member_obj.get('current_payment_status') == 'expired' and membership_end > current_time:
+                        # Member was expired but now has valid membership - reactivate
+                        await db.members.update_one(
+                            {"id": member_obj['id']},
+                            {"$set": {
+                                "current_payment_status": "paid",
+                                "member_status": "active"
+                            }}
+                        )
+                        member_obj['current_payment_status'] = "paid"
+                        member_obj['member_status'] = "active"
                 except (ValueError, TypeError):
                     # Handle invalid date format
                     pass
