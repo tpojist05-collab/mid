@@ -2151,6 +2151,10 @@ class IronParadiseGymAPITester:
         self.test_payment_gateways_initialization()
         self.test_razorpay_key_endpoint()
         
+        print("\n🔥 PAYU PAYMENT GATEWAY TESTS")
+        print("-" * 40)
+        self.test_payu_comprehensive_integration()
+        
         print("\n🧾 RECEIPT TEMPLATE SYSTEM TESTS")
         print("-" * 40)
         self.test_receipt_templates_system()
