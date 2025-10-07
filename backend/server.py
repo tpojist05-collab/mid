@@ -1418,12 +1418,27 @@ async def get_member_payments(member_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.get("/payments", response_model=List[PaymentRecord])
+@api_router.get("/payments")
 async def get_all_payments():
     try:
         payments = await db.payments.find().sort("payment_date", -1).to_list(1000)
-        return [PaymentRecord(**parse_from_mongo(payment)) for payment in payments]
+        
+        # Clean payments data for serialization
+        cleaned_payments = []
+        for payment in payments:
+            cleaned_payment = parse_from_mongo(payment.copy())
+            # Ensure required fields exist
+            cleaned_payment.setdefault('id', str(uuid.uuid4()))
+            cleaned_payment.setdefault('member_id', '')
+            cleaned_payment.setdefault('amount', 0)
+            cleaned_payment.setdefault('method', 'cash')
+            cleaned_payment.setdefault('payment_date', datetime.now(timezone.utc))
+            
+            cleaned_payments.append(cleaned_payment)
+        
+        return cleaned_payments
     except Exception as e:
+        logger.error(f"Error fetching payments: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Monthly Earnings Routes
