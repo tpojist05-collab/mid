@@ -317,29 +317,24 @@ const MemberManagement = () => {
                 Add New Member
               </Button>
             </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto z-50">
+              <DialogHeader>
+                <DialogTitle>Add New Member</DialogTitle>
+              </DialogHeader>
+              <MemberForm 
+                formData={formData}
+                setFormData={setFormData}
+                handleSubmit={handleSubmit}
+                selectedMember={selectedMember}
+                isEditModalOpen={isEditModalOpen}
+                setIsEditModalOpen={setIsEditModalOpen}
+                isAddModalOpen={isAddModalOpen}
+                setIsAddModalOpen={setIsAddModalOpen}
+                resetForm={resetForm}
+              />
+            </DialogContent>
           </Dialog>
         </div>
-      </div>
-
-      {/* Add Member Modal */}
-      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto z-50">
-            <DialogHeader>
-              <DialogTitle>Add New Member</DialogTitle>
-            </DialogHeader>
-            <MemberForm 
-              formData={formData}
-              setFormData={setFormData}
-              handleSubmit={handleSubmit}
-              selectedMember={selectedMember}
-              isEditModalOpen={isEditModalOpen}
-              setIsEditModalOpen={setIsEditModalOpen}
-              isAddModalOpen={isAddModalOpen}
-              setIsAddModalOpen={setIsAddModalOpen}
-              resetForm={resetForm}
-            />
-          </DialogContent>
-        </Dialog>
       </div>
 
       {/* View Mode Tabs */}
