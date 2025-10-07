@@ -1,6 +1,6 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
-import { AuthContext } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const PayUPayment = ({ memberData, amount, productInfo, onSuccess, onError }) => {
   const [isProcessing, setIsProcessing] = useState(false);
