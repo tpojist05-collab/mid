@@ -229,6 +229,8 @@ const PaymentManagement = () => {
               members={members}
               showRazorpay={showRazorpay}
               setShowRazorpay={setShowRazorpay}
+              showPayU={showPayU}
+              setShowPayU={setShowPayU}
               selectedMemberForPayment={selectedMemberForPayment}
               setSelectedMemberForPayment={setSelectedMemberForPayment}
               handleManualPaymentSubmit={handleManualPaymentSubmit}
