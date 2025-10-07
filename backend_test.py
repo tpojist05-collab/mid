@@ -2136,37 +2136,42 @@ class IronParadiseGymAPITester:
         success, response = self.make_request('GET', 'payu/info')
         
         if success:
-            required_fields = ['name', 'gateway_id', 'supported_methods', 'currency']
-            missing_fields = [field for field in required_fields if field not in response]
-            
-            if not missing_fields:
-                gateway_name = response.get('name')
-                gateway_id = response.get('gateway_id')
-                supported_methods = response.get('supported_methods', [])
-                currency = response.get('currency')
-                test_mode = response.get('test_mode', False)
+            # Check if response has the expected structure
+            if 'available' in response and 'gateway_info' in response:
+                available = response.get('available')
+                gateway_info = response.get('gateway_info', {})
                 
-                if gateway_name == 'PayU' and gateway_id == 'payu' and currency == 'INR':
-                    method_count = len(supported_methods)
-                    self.log_test("PayU Service Initialization", True, 
-                                f"PayU gateway initialized - {method_count} payment methods supported, test mode: {test_mode}")
+                if available and gateway_info:
+                    gateway_name = gateway_info.get('name')
+                    gateway_id = gateway_info.get('gateway_id')
+                    supported_methods = gateway_info.get('supported_methods', [])
+                    currency = gateway_info.get('currency')
+                    test_mode = gateway_info.get('test_mode', False)
                     
-                    # Verify expected payment methods are supported
-                    expected_methods = ['credit_card', 'debit_card', 'upi', 'net_banking']
-                    found_methods = [method for method in expected_methods if method in supported_methods]
-                    
-                    if len(found_methods) >= 3:  # At least 3 major methods should be supported
-                        self.log_test("PayU Payment Methods Support", True, 
-                                    f"PayU supports major payment methods: {found_methods}")
+                    if gateway_name == 'PayU' and gateway_id == 'payu' and currency == 'INR':
+                        method_count = len(supported_methods)
+                        self.log_test("PayU Service Initialization", True, 
+                                    f"PayU gateway initialized - {method_count} payment methods supported, test mode: {test_mode}")
+                        
+                        # Verify expected payment methods are supported
+                        expected_methods = ['credit_card', 'debit_card', 'upi', 'net_banking']
+                        found_methods = [method for method in expected_methods if method in supported_methods]
+                        
+                        if len(found_methods) >= 3:  # At least 3 major methods should be supported
+                            self.log_test("PayU Payment Methods Support", True, 
+                                        f"PayU supports major payment methods: {found_methods}")
+                        else:
+                            self.log_test("PayU Payment Methods Support", False, 
+                                        f"Limited payment methods supported: {found_methods}")
                     else:
-                        self.log_test("PayU Payment Methods Support", False, 
-                                    f"Limited payment methods supported: {found_methods}")
+                        self.log_test("PayU Service Initialization", False, 
+                                    f"Invalid gateway info - name: {gateway_name}, id: {gateway_id}, currency: {currency}")
                 else:
                     self.log_test("PayU Service Initialization", False, 
-                                f"Invalid gateway info - name: {gateway_name}, id: {gateway_id}, currency: {currency}")
+                                f"PayU service not available or missing gateway info")
             else:
                 self.log_test("PayU Service Initialization", False, 
-                            f"Missing required fields: {missing_fields}", response)
+                            f"Unexpected response structure", response)
         else:
             self.log_test("PayU Service Initialization", False, 
                         "Failed to get PayU gateway info", response)
