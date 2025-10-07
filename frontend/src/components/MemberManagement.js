@@ -253,14 +253,31 @@ const MemberManagement = () => {
 
     // Filter by view mode first
     const isExpired = new Date(member.membership_end) < new Date();
-    const isActiveStatus = member.member_status === 'active' && member.current_payment_status === 'paid' && !isExpired;
+    const isActiveStatus = member.current_payment_status === 'active' || member.current_payment_status === 'paid';
     
     switch (viewMode) {
       case 'active':
-        if (!isActiveStatus) return false;
+        if (!isActiveStatus || isExpired) return false;
+        break;
+      case 'expired':
+        if (member.current_payment_status !== 'expired') return false;
+        break;
+      case 'expiring_7days':
+        if (!member.membership_end) return false;
+        const endDate7 = new Date(member.membership_end);
+        const now7 = new Date();
+        const diffDays7 = Math.ceil((endDate7 - now7) / (1000 * 60 * 60 * 24));
+        if (!(diffDays7 > 0 && diffDays7 <= 7)) return false;
+        break;
+      case 'expiring_30days':
+        if (!member.membership_end) return false;
+        const endDate30 = new Date(member.membership_end);
+        const now30 = new Date();
+        const diffDays30 = Math.ceil((endDate30 - now30) / (1000 * 60 * 60 * 24));
+        if (!(diffDays30 > 0 && diffDays30 <= 30)) return false;
         break;
       case 'inactive':
-        if (isActiveStatus) return false;
+        if (!(member.current_payment_status === 'inactive' || member.current_payment_status === 'suspended')) return false;
         break;
       case 'all':
       default:
