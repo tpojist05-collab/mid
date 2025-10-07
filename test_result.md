@@ -437,17 +437,17 @@
 
 ## test_plan:
   current_focus:
-    - "WhatsApp Reminder System with Real Twilio Credentials - COMPLETED ✅"
-    - "Expiring Members Data Verification - COMPLETED ✅"
-    - "WhatsApp Message Delivery Testing - COMPLETED ✅"
-    - "Bank Account Details in Messages - COMPLETED ✅"
-    - "Reminder Service Initialization - COMPLETED ✅"
+    - "Payment Expiry Logic Testing - COMPLETED ✅"
+    - "Receipt Register Testing - COMPLETED ✅"
+    - "Expired Members Detection - COMPLETED ✅"
+    - "Editable Reminder Templates - COMPLETED ✅"
+    - "Reminder Records Testing - COMPLETED ✅"
   stuck_tasks: 
+    - "Receipt Register Endpoint (GET /api/receipts/register returns 404 - Not Found) - NEEDS IMPLEMENTATION"
     - "Receipt Templates Endpoint (MongoDB ObjectId Serialization - /api/receipts/templates returns 500) - NON-CRITICAL"
-    - "Reminder History Endpoint (MongoDB ObjectId Serialization - /api/reminders/history returns 500) - NON-CRITICAL"
-    - "Receipts Register Endpoint (Routing Issue - /api/receipts returns 404, defined after app.include_router) - NON-CRITICAL"
+    - "Reminder History Field Validation (Missing sender, timestamp, message fields) - NON-CRITICAL"
   test_all: true
-  test_priority: "whatsapp_reminder_system_real_credentials_testing_successful"
+  test_priority: "critical_fixes_testing_completed"
 
 ## agent_communication:
     - agent: "main"
