@@ -1426,7 +1426,7 @@ async def record_payment(payment_data: PaymentCreate):
                 existing_end_date = datetime.fromisoformat(current_member['membership_end'])
                 if existing_end_date > datetime.now(timezone.utc):
                     current_end_date = existing_end_date
-            except:
+            except (ValueError, TypeError):
                 pass
         
         # Calculate new expiry date
@@ -1712,7 +1712,7 @@ async def verify_razorpay_payment(payment_data: RazorpayPaymentVerify):
                 existing_end_date = datetime.fromisoformat(current_member['membership_end'])
                 if existing_end_date > datetime.now(timezone.utc):
                     current_end_date = existing_end_date
-            except:
+            except (ValueError, TypeError):
                 pass
         
         # Calculate new expiry date
