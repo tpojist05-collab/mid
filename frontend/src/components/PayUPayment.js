@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const PayUPayment = ({ memberData, amount, productInfo, onSuccess, onError }) => {
   const [isProcessing, setIsProcessing] = useState(false);
-  const { token } = useContext(AuthContext);
+  const { token } = useAuth();
   
   const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
