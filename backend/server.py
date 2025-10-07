@@ -1440,7 +1440,7 @@ async def record_payment(payment_data: PaymentCreate):
         await db.members.update_one(
             {"id": payment_data.member_id},
             {"$set": {
-                "current_payment_status": PaymentStatus.PAID.value,
+                "current_payment_status": "paid",
                 "member_status": "active",
                 "membership_end": new_expiry_date.isoformat(),
                 "updated_at": datetime.now(timezone.utc).isoformat()
