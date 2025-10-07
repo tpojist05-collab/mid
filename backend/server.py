@@ -1769,8 +1769,26 @@ async def send_reminder_to_member(
         result = await reminder_service_instance.send_manual_reminder(member_id)
         
         if result["success"]:
-            # Send notification about manual reminder
+            # Get member details
             member = await db.members.find_one({"id": member_id})
+            
+            # Store reminder record
+            reminder_record = {
+                "id": str(uuid.uuid4()),
+                "member_id": member_id,
+                "member_name": member['name'] if member else 'Unknown',
+                "member_phone": member.get('phone', '') if member else '',
+                "message_sent": result.get("message_content", ""),
+                "sent_by": current_user.id,
+                "sent_by_name": current_user.full_name,
+                "sent_at": datetime.now(timezone.utc),
+                "method": "whatsapp",
+                "status": "sent"
+            }
+            
+            await db.reminder_logs.insert_one(reminder_record)
+            
+            # Send notification about manual reminder
             await send_system_notification(
                 "Manual reminder sent",
                 f"WhatsApp reminder sent to {member['name'] if member else 'member'} by {current_user.full_name}",
