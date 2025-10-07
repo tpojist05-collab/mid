@@ -87,6 +87,9 @@ async def test_member_expiry_logic():
                     membership_end = member_obj['membership_end']
                     if isinstance(membership_end, str):
                         membership_end = datetime.fromisoformat(membership_end)
+                    # Ensure both datetimes are timezone-aware
+                    if membership_end.tzinfo is None:
+                        membership_end = membership_end.replace(tzinfo=timezone.utc)
                     is_expired = membership_end < current_time
                     print(f"   Is expired: {is_expired}")
         
