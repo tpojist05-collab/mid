@@ -2085,12 +2085,63 @@ async def mark_notification_read(
     current_user: User = Depends(get_current_active_user)
 ):
     try:
-        await db.notifications.update_one(
+        result = await db.notifications.update_one(
             {"id": notification_id},
-            {"$set": {"read": True}}
+            {"$set": {"read": True, "read_at": datetime.now(timezone.utc)}}
         )
-        return {"message": "Notification marked as read"}
         
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Notification not found")
+        
+        return {"message": "Notification marked as read"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.patch("/notifications/mark-all-read")
+async def mark_all_notifications_read(current_user: User = Depends(get_current_active_user)):
+    """Mark all notifications as read for current user"""
+    try:
+        result = await db.notifications.update_many(
+            {"user_id": current_user.id, "read": False},
+            {"$set": {"read": True, "read_at": datetime.now(timezone.utc)}}
+        )
+        
+        return {
+            "message": "All notifications marked as read",
+            "updated_count": result.modified_count
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/notifications/clear-all")
+async def clear_all_notifications(current_user: User = Depends(get_current_active_user)):
+    """Clear all notifications for current user"""
+    try:
+        result = await db.notifications.delete_many({"user_id": current_user.id})
+        
+        return {
+            "message": "All notifications cleared",
+            "deleted_count": result.deleted_count
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/notifications/{notification_id}")
+async def delete_notification(
+    notification_id: str,
+    current_user: User = Depends(get_current_active_user)
+):
+    """Delete a specific notification"""
+    try:
+        result = await db.notifications.delete_one({
+            "id": notification_id,
+            "user_id": current_user.id
+        })
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Notification not found")
+        
+        return {"message": "Notification deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
