@@ -57,6 +57,24 @@ const MemberForm = ({
           />
         </div>
         <div className="space-y-2">
+          <Label htmlFor="join_date">Date of Joining</Label>
+          <Input
+            id="join_date"
+            type="date"
+            value={formData.join_date}
+            onChange={(e) => setFormData({ ...formData, join_date: e.target.value })}
+            max={new Date().toISOString().split('T')[0]} // Today's date as maximum
+            required
+            data-testid="member-join-date-input"
+          />
+          <div className="text-xs text-slate-500 mt-1">
+            📅 You can backdate or use current date
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
           <Label htmlFor="membership_type">Membership Plan</Label>
           <Select 
             value={formData.membership_type} 
@@ -66,13 +84,13 @@ const MemberForm = ({
               <SelectValue placeholder="Select membership type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="monthly">Monthly Plan - ₹2,000</SelectItem>
-              <SelectItem value="quarterly">Quarterly Plan - ₹5,500</SelectItem>
-              <SelectItem value="six_monthly">Six Monthly Plan - ₹10,500</SelectItem>
+              <SelectItem value="monthly">Monthly Plan</SelectItem>
+              <SelectItem value="quarterly">Quarterly Plan (3 months)</SelectItem>
+              <SelectItem value="six_monthly">Six Monthly Plan (6 months)</SelectItem>
             </SelectContent>
           </Select>
           <div className="text-xs text-slate-500 mt-1">
-            💡 Admission fee will be added automatically based on gym settings
+            💰 Admin will set pricing in settings
           </div>
         </div>
       </div>
