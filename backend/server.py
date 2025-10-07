@@ -600,7 +600,7 @@ def parse_from_mongo(item: dict) -> dict:
         if field in item and isinstance(item[field], str):
             try:
                 item[field] = datetime.fromisoformat(item[field])
-            except:
+            except ValueError:
                 pass
         elif field in item and item[field] is None:
             # Handle None values by setting a default datetime for required fields
