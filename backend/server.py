@@ -2305,6 +2305,108 @@ async def initialize_receipt_templates():
         logger.error(f"Error initializing receipt templates: {e}")
         raise
 
+# Receipt Register Management API
+@api_router.get("/receipts")
+async def get_receipt_register(current_user: User = Depends(get_current_active_user)):
+    """Get all stored receipts in register"""
+    try:
+        receipts = await db.receipts.find({"status": "active"}).sort("generated_at", -1).to_list(1000)
+        return receipts
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/receipts/{receipt_id}")
+async def get_receipt_by_id(receipt_id: str, current_user: User = Depends(get_current_active_user)):
+    """Get specific receipt by ID"""
+    try:
+        receipt = await db.receipts.find_one({"id": receipt_id, "status": "active"})
+        if not receipt:
+            raise HTTPException(status_code=404, detail="Receipt not found")
+        return receipt
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/receipts/{receipt_id}")
+async def delete_receipt(receipt_id: str, current_admin: User = Depends(require_admin_role)):
+    """Delete receipt from register (admin only)"""
+    try:
+        # Check if receipt exists
+        receipt = await db.receipts.find_one({"id": receipt_id, "status": "active"})
+        if not receipt:
+            raise HTTPException(status_code=404, detail="Receipt not found")
+        
+        # Soft delete - mark as deleted instead of removing
+        await db.receipts.update_one(
+            {"id": receipt_id},
+            {
+                "$set": {
+                    "status": "deleted",
+                    "deleted_by": current_admin.id,
+                    "deleted_at": datetime.now(timezone.utc)
+                }
+            }
+        )
+        
+        # Send notification
+        await send_system_notification(
+            "Receipt Deleted",
+            f"Receipt for {receipt.get('member_name', 'Unknown')} - ₹{receipt.get('payment_amount', 0)} deleted by {current_admin.full_name}",
+            "warning"
+        )
+        
+        return {"message": "Receipt deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/receipts/bulk-delete")
+async def bulk_delete_receipts(
+    receipt_data: dict,
+    current_admin: User = Depends(require_admin_role)
+):
+    """Bulk delete receipts (admin only)"""
+    try:
+        receipt_ids = receipt_data.get("receipt_ids", [])
+        if not receipt_ids:
+            raise HTTPException(status_code=400, detail="No receipt IDs provided")
+        
+        if len(receipt_ids) > 50:
+            raise HTTPException(status_code=400, detail="Cannot delete more than 50 receipts at once")
+        
+        # Get receipt details for notification
+        receipts = await db.receipts.find({"id": {"$in": receipt_ids}, "status": "active"}).to_list(1000)
+        
+        # Bulk soft delete
+        result = await db.receipts.update_many(
+            {"id": {"$in": receipt_ids}, "status": "active"},
+            {
+                "$set": {
+                    "status": "deleted",
+                    "deleted_by": current_admin.id,
+                    "deleted_at": datetime.now(timezone.utc)
+                }
+            }
+        )
+        
+        # Send notification
+        await send_system_notification(
+            f"Bulk delete: {result.modified_count} receipts",
+            f"Receipts deleted by {current_admin.full_name}",
+            "warning"
+        )
+        
+        return {
+            "message": f"Successfully deleted {result.modified_count} receipts",
+            "deleted_count": result.modified_count
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Receipt Management API
 @app.get("/api/receipts/templates", response_model=List[dict])
 async def get_receipt_templates(current_user: User = Depends(get_current_active_user)):
