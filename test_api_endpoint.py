@@ -17,7 +17,7 @@ def test_member_api():
     print("\n🔐 Testing Authentication...")
     
     login_data = {
-        "username": "goswami",
+        "username": "test_admin",
         "password": "IronParadise@2024"
     }
     
