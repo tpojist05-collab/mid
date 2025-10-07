@@ -305,12 +305,21 @@ const MemberManagement = () => {
       {/* Header with Add Button */}
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-slate-800">Member Management</h2>
+        <div className="flex gap-3">
+          <BulkMemberActions 
+            members={filteredMembers} 
+            onUpdate={fetchMembers}
+            userRole={user?.role}
+          />
+          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700" data-testid="add-member-btn">
+                Add New Member
+              </Button>
+            </DialogTrigger>
+          </Dialog>
+        </div>
         <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700" data-testid="add-member-btn">
-              Add New Member
-            </Button>
-          </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto z-50">
             <DialogHeader>
               <DialogTitle>Add New Member</DialogTitle>
