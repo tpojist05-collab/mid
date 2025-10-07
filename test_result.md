@@ -432,15 +432,18 @@
 
 ## test_plan:
   current_focus:
-    - "WhatsApp Reminders Authentication Fix - COMPLETED"
-    - "All Core Reminder Functionality Working"
-    - "System Ready for Production Use"
+    - "New Features Testing - COMPLETED"
+    - "Interactive Dashboard Cards - COMPLETED"
+    - "Member Management Enhancements - COMPLETED"
+    - "WhatsApp Reminders with Bank Details - COMPLETED"
+    - "Receipt Storage System - COMPLETED"
+    - "Notification Management - COMPLETED"
   stuck_tasks: 
+    - "MongoDB ObjectId Serialization Issues (/api/members and /api/reminders/history endpoints - Minor Issue)"
     - "Razorpay Order Creation (Authentication Issues - Expected with Test Credentials)"
     - "Receipt Template Listing (MongoDB ObjectId Serialization - Minor Issue)"
-    - "Reminder History (MongoDB ObjectId Serialization - Minor Issue)"
   test_all: true
-  test_priority: "authentication_fixes_complete"
+  test_priority: "new_features_testing_complete"
 
 ## agent_communication:
     - agent: "main"
