@@ -31,6 +31,9 @@ const ReminderManagement = () => {
   useEffect(() => {
     fetchExpiringMembers();
     fetchReminderHistory();
+    if (user && (user.role === 'admin' || user.role === 'manager')) {
+      fetchReminderTemplate();
+    }
   }, [selectedDays]);
 
   const fetchExpiringMembers = async () => {
