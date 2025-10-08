@@ -3171,8 +3171,12 @@ class IronParadiseGymAPITester:
             
         # Test 1: Custom reminder endpoint
         if self.created_member_id:
+            reminder_data = {
+                "member_id": self.created_member_id,
+                "custom_message": "This is a test custom reminder message from Iron Paradise Gym"
+            }
             success, response = self.make_request('POST', f'reminders/send/{self.created_member_id}', 
-                                                auth_required=True)
+                                                reminder_data, auth_required=True)
             
             if success:
                 message = response.get('message', '')
