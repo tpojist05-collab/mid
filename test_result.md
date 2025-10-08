@@ -516,12 +516,13 @@
     - "WhatsApp Custom Message Service Testing - COMPLETED ✅"
     - "Integration Testing Custom Reminders - COMPLETED ✅"
     - "Priority Testing from Review Request - COMPLETED ✅"
+    - "Frontend UI Testing Custom Reminders & Renewal Logic - COMPLETED ✅"
   stuck_tasks: 
     - "Receipt Register Endpoint (GET /api/receipts/register returns 404 - Not Found) - NEEDS IMPLEMENTATION"
+    - "Reminder History Endpoint (GET /api/reminders/history returns 404 - Not Found) - NON-CRITICAL"
     - "Receipt Templates Endpoint (MongoDB ObjectId Serialization - /api/receipts/templates returns 500) - NON-CRITICAL"
-    - "Reminder History Field Validation (Missing sender, timestamp, message fields) - NON-CRITICAL"
   test_all: false
-  test_priority: "renewal_date_logic_and_custom_reminders_testing_completed"
+  test_priority: "comprehensive_frontend_ui_testing_completed"
 
 ## agent_communication:
     - agent: "main"
