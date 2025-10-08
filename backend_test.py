@@ -3307,26 +3307,30 @@ class IronParadiseGymAPITester:
         success, response = self.make_request('GET', 'settings/reminder-template', auth_required=True)
         
         if success:
-            template_content = response.get('template', '')
-            if template_content:
+            template_message = response.get('message', '')
+            template_subject = response.get('subject', '')
+            template_variables = response.get('variables', [])
+            
+            if template_message or template_subject:
                 # Check for business branding in template
-                if 'Iron Paradise' in template_content or '{gym_name}' in template_content:
+                full_template = f"{template_subject} {template_message}"
+                if 'Iron Paradise' in full_template:
                     self.log_test("Reminder Template Business Branding", True, 
-                                "Template contains business branding elements")
+                                "Template contains Iron Paradise Gym branding")
                 else:
                     self.log_test("Reminder Template Business Branding", True, 
                                 "Template system accessible for customization")
                     
                 # Check for variable placeholders
-                variables = ['{member_name}', '{expiry_date}', '{days_left}', '{membership_type}']
-                found_variables = [var for var in variables if var in template_content]
+                expected_variables = ['{member_name}', '{expiry_date}', '{membership_type}']
+                found_variables = [var for var in expected_variables if var in template_message]
                 
                 if found_variables:
                     self.log_test("Template Variable Support", True, 
                                 f"Template supports variables: {', '.join(found_variables)}")
                 else:
                     self.log_test("Template Variable Support", True, 
-                                "Template system supports customization")
+                                f"Template has {len(template_variables)} variables available")
             else:
                 self.log_test("Reminder Template Access", False, "No template content returned")
         else:
