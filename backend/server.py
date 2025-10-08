@@ -2292,12 +2292,18 @@ async def send_bulk_reminders(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.get("/reminders/history")
-async def get_reminder_history(current_user: User = Depends(get_current_active_user)):
-    """Get reminder history from stored logs"""
+@api_router.get("/reminders/register")
+async def get_reminder_register(
+    current_user: User = Depends(get_current_active_user)
+):
+    """Get complete reminder register/logs (admin/manager only)"""
     try:
-        # Get reminder logs from database
-        logs = await db.reminder_logs.find({}).sort("sent_at", -1).to_list(1000)
+        # Check if user has permission (admin or manager)
+        if current_user.role not in ["admin", "manager"]:
+            raise HTTPException(status_code=403, detail="Admin or Manager access required")
+        
+        # Get all reminder logs sorted by sent date
+        logs = await db.reminder_logs.find().sort("sent_at", -1).limit(1000).to_list(1000)
         
         # Clean logs data for serialization
         cleaned_logs = []
@@ -2306,13 +2312,17 @@ async def get_reminder_history(current_user: User = Depends(get_current_active_u
             # Convert datetime to string if needed
             if isinstance(cleaned_log.get('sent_at'), datetime):
                 cleaned_log['sent_at'] = cleaned_log['sent_at'].isoformat()
-            
             cleaned_logs.append(cleaned_log)
         
-        return cleaned_logs
+        return {
+            "total_reminders": len(cleaned_logs),
+            "reminders": cleaned_logs
+        }
         
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error fetching reminder history: {e}")
+        logger.error(f"Error getting reminder register: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/reminders/history/{member_id}")
