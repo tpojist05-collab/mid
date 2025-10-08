@@ -26,6 +26,30 @@ const MemberManagement = () => {
   const [viewMode, setViewMode] = useState('all'); // 'all', 'active', 'inactive'
   const { user, isAdmin } = useAuth();
 
+  // Calculate enrollment amount based on membership type and enrollment status
+  const calculateEnrollmentAmount = (membershipType, isExistingMember = false) => {
+    const amounts = {
+      monthly: {
+        first: 2500,  // First month
+        subsequent: 1000  // Subsequent months
+      },
+      quarterly: {
+        first: 3500,  // First quarter
+        subsequent: 3000  // Subsequent quarters
+      },
+      six_monthly: {
+        first: 6000,  // First half-year
+        subsequent: 5500  // Subsequent half-years
+      }
+    };
+    
+    if (!membershipType || !amounts[membershipType]) {
+      return 0;
+    }
+    
+    return isExistingMember ? amounts[membershipType].subsequent : amounts[membershipType].first;
+  };
+
   // Form state
   const [formData, setFormData] = useState({
     name: '',
