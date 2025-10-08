@@ -1014,12 +1014,29 @@ async def create_member(member_data: MemberCreate, current_user: User = Depends(
         member_dict = prepare_for_mongo(member.dict())
         await db.members.insert_one(member_dict)
         
-        # Send notification
+        # Create initial enrollment payment record (pending)
+        payment_record = PaymentRecord(
+            member_id=member.id,
+            amount=enrollment_amount,
+            payment_method=PaymentMethod.CASH,  # Default to cash, can be updated when payment is made
+            description=f"Enrollment fee - {member_data.membership_type.value} membership",
+            payment_date=join_date
+        )
+        
+        # Mark payment as pending initially
+        payment_dict = prepare_for_mongo(payment_record.dict())
+        payment_dict["status"] = "pending"  # This payment needs to be collected
+        await db.payments.insert_one(payment_dict)
+        
+        # Send notification with enrollment amount details
+        amount_breakdown = f"₹{enrollment_amount}"
+        if admission_fee > 0:
+            amount_breakdown += f" (₹{admission_fee} admission + ₹{membership_fee} membership)"
+        
         await send_system_notification(
-            f"New member '{member.name}' added",
-            f"Membership: {member_data.membership_type.value} | Start: {join_date.strftime('%Y-%m-%d')} | Total: ₹{total_due}" + 
-            (f" (includes ₹{admission_fee} admission fee)" if admission_fee > 0 else ""),
-            "info"
+            f"New member '{member.name}' added - Payment Pending",
+            f"Membership: {member_data.membership_type.value} | Start: {join_date.strftime('%Y-%m-%d')} | Amount due: {amount_breakdown}",
+            "warning"  # Warning to indicate payment is pending
         )
         
         return member
