@@ -2161,8 +2161,8 @@ class CustomReminderRequest(BaseModel):
 @api_router.post("/reminders/send/{member_id}")
 async def send_reminder_to_member(
     member_id: str,
-    reminder_data: Optional[CustomReminderRequest] = None,
-    current_user: User = Depends(get_current_active_user)
+    current_user: User = Depends(get_current_active_user),
+    reminder_data: CustomReminderRequest = None
 ):
     try:
         # Use new WhatsApp service
