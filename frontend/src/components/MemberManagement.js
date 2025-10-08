@@ -37,7 +37,8 @@ const MemberManagement = () => {
       phone: '',
       relationship: ''
     },
-    membership_type: 'monthly'
+    membership_type: 'monthly',
+    enrollment_amount: 0
   });
 
   useEffect(() => {
