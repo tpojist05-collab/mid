@@ -125,10 +125,8 @@ const ReminderManagement = () => {
       const response = await axios.post(
         `${process.env.REACT_APP_BACKEND_URL}/api/reminders/send/${selectedMemberForReminder.id}`,
         {
-          reminder_data: {
-            member_id: selectedMemberForReminder.id,
-            custom_message: customReminderMessage.trim()
-          }
+          member_id: selectedMemberForReminder.id,
+          custom_message: customReminderMessage.trim()
         },
         { 
           headers: { 
