@@ -109,23 +109,46 @@ const ReminderManagement = () => {
     }
   };
 
-  const sendIndividualReminder = async (memberId, memberName) => {
+  const sendIndividualReminder = (member) => {
+    setSelectedMemberForReminder(member);
+    setCustomReminderMessage('');
+    setShowCustomReminderDialog(true);
+  };
+
+  const sendCustomReminder = async () => {
+    if (!selectedMemberForReminder || !customReminderMessage.trim()) {
+      toast.error('Please enter a reminder message');
+      return;
+    }
+
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/api/reminders/send/${memberId}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        `${process.env.REACT_APP_BACKEND_URL}/api/reminders/send/${selectedMemberForReminder.id}`,
+        {
+          member_id: selectedMemberForReminder.id,
+          custom_message: customReminderMessage.trim()
+        },
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          } 
+        }
       );
       
-      toast.success(`WhatsApp reminder sent to ${memberName}!`);
+      if (response.data.whatsapp_link) {
+        // Open WhatsApp link
+        window.open(response.data.whatsapp_link, '_blank');
+      }
       
-      // Refresh data to update reminder status
-      await fetchExpiringMembers();
-      await fetchReminderHistory();
-      
+      toast.success(`Custom reminder sent to ${selectedMemberForReminder.name}`);
+      setShowCustomReminderDialog(false);
+      setSelectedMemberForReminder(null);
+      setCustomReminderMessage('');
+      fetchReminderHistory();
     } catch (error) {
-      console.error('Error sending reminder:', error);
-      toast.error(`Failed to send reminder to ${memberName}`);
+      console.error('Error sending custom reminder:', error);
+      toast.error(`Failed to send reminder to ${selectedMemberForReminder.name}`);
     }
   };
 
