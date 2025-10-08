@@ -51,18 +51,23 @@ const MemberManagement = () => {
   };
 
   // Form state
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    emergency_contact: {
+  const [formData, setFormData] = useState(() => {
+    const initialData = {
       name: '',
+      email: '',
       phone: '',
-      relationship: ''
-    },
-    membership_type: 'monthly',
-    enrollment_amount: 0
+      address: '',
+      emergency_contact: {
+        name: '',
+        phone: '',
+        relationship: ''
+      },
+      membership_type: 'monthly',
+      enrollment_amount: 0
+    };
+    // Set initial enrollment amount for monthly membership
+    initialData.enrollment_amount = calculateEnrollmentAmount('monthly', false);
+    return initialData;
   });
 
   useEffect(() => {
