@@ -154,11 +154,11 @@ const ReminderManagement = () => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
+    if (!dateString) return 'Never';
     return new Date(dateString).toLocaleDateString('en-IN', {
-      year: 'numeric',
+      day: '2-digit',
       month: 'short',
-      day: 'numeric'
+      year: 'numeric'
     });
   };
 
