@@ -2437,6 +2437,386 @@ class IronParadiseGymAPITester:
         print("PAYU INTEGRATION TESTING COMPLETED")
         print("="*80)
 
+    def test_enrollment_amount_calculation(self):
+        """Test enrollment amount calculation function for all membership types"""
+        print("\n" + "="*80)
+        print("ENROLLMENT AMOUNT CALCULATION TESTING")
+        print("="*80)
+        
+        # Test enrollment amounts for new members (first enrollment)
+        enrollment_tests = [
+            {
+                "type": "monthly",
+                "is_existing": False,
+                "expected": 2500.0,
+                "description": "Monthly first enrollment"
+            },
+            {
+                "type": "monthly", 
+                "is_existing": True,
+                "expected": 1000.0,
+                "description": "Monthly subsequent enrollment"
+            },
+            {
+                "type": "quarterly",
+                "is_existing": False,
+                "expected": 3500.0,
+                "description": "Quarterly first enrollment"
+            },
+            {
+                "type": "quarterly",
+                "is_existing": True,
+                "expected": 3000.0,
+                "description": "Quarterly subsequent enrollment"
+            },
+            {
+                "type": "six_monthly",
+                "is_existing": False,
+                "expected": 6000.0,
+                "description": "Six-monthly first enrollment"
+            },
+            {
+                "type": "six_monthly",
+                "is_existing": True,
+                "expected": 5500.0,
+                "description": "Six-monthly subsequent enrollment"
+            }
+        ]
+        
+        all_passed = True
+        for test in enrollment_tests:
+            # Create member with specific enrollment amount to test calculation
+            member_data = {
+                "name": f"Enrollment Test {test['description']}",
+                "email": f"enrollment_{test['type']}_{test['is_existing']}@example.com",
+                "phone": "+91 9876543299",
+                "address": "Test Address for Enrollment",
+                "emergency_contact": {
+                    "name": "Test Contact",
+                    "phone": "+91 9876543298",
+                    "relationship": "Friend"
+                },
+                "membership_type": test['type'],
+                "enrollment_amount": test['expected']  # Explicitly set enrollment amount
+            }
+            
+            success, response = self.make_request('POST', 'members', member_data, auth_required=True)
+            
+            if success:
+                actual_total = response.get('total_amount_due', 0)
+                if actual_total == test['expected']:
+                    self.log_test(f"Enrollment Amount - {test['description']}", True, 
+                                f"Correct amount: ₹{test['expected']}")
+                else:
+                    self.log_test(f"Enrollment Amount - {test['description']}", False, 
+                                f"Expected: ₹{test['expected']}, Got: ₹{actual_total}")
+                    all_passed = False
+            else:
+                self.log_test(f"Enrollment Amount - {test['description']}", False, 
+                            "Failed to create member", response)
+                all_passed = False
+        
+        if all_passed:
+            self.log_test("Enrollment Amount Calculation System", True, 
+                        "All enrollment amount calculations working correctly")
+        else:
+            self.log_test("Enrollment Amount Calculation System", False, 
+                        "Some enrollment amount calculations failed")
+
+    def test_member_creation_with_enrollment_amount(self):
+        """Test member creation with enrollment_amount field and payment record creation"""
+        print("\n" + "="*80)
+        print("MEMBER CREATION WITH ENROLLMENT AMOUNT TESTING")
+        print("="*80)
+        
+        if not self.auth_token:
+            self.log_test("Member Creation with Enrollment Amount", False, "No auth token available")
+            return
+        
+        # Test creating members with different enrollment amounts
+        test_cases = [
+            {
+                "name": "Arjun Patel",
+                "email": "arjun.patel@example.com", 
+                "phone": "+91 9876543301",
+                "membership_type": "monthly",
+                "expected_enrollment": 2500.0,
+                "description": "Monthly member - first enrollment"
+            },
+            {
+                "name": "Priya Sharma",
+                "email": "priya.sharma@example.com",
+                "phone": "+91 9876543302", 
+                "membership_type": "quarterly",
+                "expected_enrollment": 3500.0,
+                "description": "Quarterly member - first enrollment"
+            },
+            {
+                "name": "Rajesh Kumar",
+                "email": "rajesh.kumar@example.com",
+                "phone": "+91 9876543303",
+                "membership_type": "six_monthly", 
+                "expected_enrollment": 6000.0,
+                "description": "Six-monthly member - first enrollment"
+            }
+        ]
+        
+        created_member_ids = []
+        
+        for test_case in test_cases:
+            member_data = {
+                "name": test_case["name"],
+                "email": test_case["email"],
+                "phone": test_case["phone"],
+                "address": "123 Test Street, Bangalore, Karnataka 560001",
+                "emergency_contact": {
+                    "name": "Emergency Contact",
+                    "phone": "+91 9876543399",
+                    "relationship": "Friend"
+                },
+                "membership_type": test_case["membership_type"]
+                # Not setting enrollment_amount - should use default calculation
+            }
+            
+            success, response = self.make_request('POST', 'members', member_data, auth_required=True)
+            
+            if success:
+                member_id = response.get('id')
+                total_amount_due = response.get('total_amount_due', 0)
+                
+                if total_amount_due == test_case["expected_enrollment"]:
+                    self.log_test(f"Create Member - {test_case['description']}", True,
+                                f"Member created with correct enrollment amount: ₹{total_amount_due}")
+                    created_member_ids.append(member_id)
+                    
+                    # Test that payment record was created
+                    self.test_enrollment_payment_record_creation(member_id, test_case["expected_enrollment"])
+                    
+                else:
+                    self.log_test(f"Create Member - {test_case['description']}", False,
+                                f"Expected enrollment: ₹{test_case['expected_enrollment']}, Got: ₹{total_amount_due}")
+            else:
+                self.log_test(f"Create Member - {test_case['description']}", False,
+                            "Failed to create member", response)
+        
+        return created_member_ids
+
+    def test_enrollment_payment_record_creation(self, member_id: str, expected_amount: float):
+        """Test that enrollment payment record is created with correct amount"""
+        success, response = self.make_request('GET', f'payments/{member_id}', auth_required=True)
+        
+        if success:
+            if isinstance(response, list) and len(response) > 0:
+                # Find enrollment payment record
+                enrollment_payment = None
+                for payment in response:
+                    if 'enrollment' in payment.get('description', '').lower():
+                        enrollment_payment = payment
+                        break
+                
+                if enrollment_payment:
+                    payment_amount = enrollment_payment.get('amount', 0)
+                    payment_status = enrollment_payment.get('status', 'unknown')
+                    
+                    if payment_amount == expected_amount:
+                        self.log_test("Enrollment Payment Record Creation", True,
+                                    f"Payment record created with correct amount: ₹{payment_amount}, Status: {payment_status}")
+                        
+                        # Verify payment status is pending initially
+                        if payment_status == 'pending':
+                            self.log_test("Enrollment Payment Status", True,
+                                        "Payment status correctly set to 'pending'")
+                        else:
+                            self.log_test("Enrollment Payment Status", False,
+                                        f"Expected 'pending' status, got: {payment_status}")
+                    else:
+                        self.log_test("Enrollment Payment Record Creation", False,
+                                    f"Expected amount: ₹{expected_amount}, Got: ₹{payment_amount}")
+                else:
+                    self.log_test("Enrollment Payment Record Creation", False,
+                                "No enrollment payment record found")
+            else:
+                self.log_test("Enrollment Payment Record Creation", False,
+                            "No payment records found for member")
+        else:
+            self.log_test("Enrollment Payment Record Creation", False,
+                        "Failed to get member payments", response)
+
+    def test_enrollment_amount_scenarios(self):
+        """Test specific enrollment amount scenarios from the review request"""
+        print("\n" + "="*80)
+        print("ENROLLMENT AMOUNT SCENARIOS TESTING")
+        print("="*80)
+        
+        if not self.auth_token:
+            self.log_test("Enrollment Amount Scenarios", False, "No auth token available")
+            return
+        
+        # Scenario 1: Create monthly member (should be ₹2500)
+        monthly_data = {
+            "name": "Monthly Scenario Test",
+            "email": "monthly.scenario@example.com",
+            "phone": "+91 9876543701",
+            "address": "Monthly Test Address",
+            "emergency_contact": {
+                "name": "Monthly Contact",
+                "phone": "+91 9876543702",
+                "relationship": "Friend"
+            },
+            "membership_type": "monthly"
+        }
+        
+        success, response = self.make_request('POST', 'members', monthly_data, auth_required=True)
+        
+        if success:
+            total_amount = response.get('total_amount_due', 0)
+            if total_amount == 2500.0:
+                self.log_test("Scenario 1 - Monthly member (₹2500)", True,
+                            f"Monthly member created with correct amount: ₹{total_amount}")
+                monthly_member_id = response.get('id')
+                
+                # Verify payment record for monthly member
+                self.verify_enrollment_payment_record(monthly_member_id, 2500.0, "monthly")
+            else:
+                self.log_test("Scenario 1 - Monthly member (₹2500)", False,
+                            f"Expected ₹2500, got ₹{total_amount}")
+        else:
+            self.log_test("Scenario 1 - Monthly member (₹2500)", False,
+                        "Failed to create monthly member", response)
+        
+        # Scenario 2: Create quarterly member (should be ₹3500)
+        quarterly_data = {
+            "name": "Quarterly Scenario Test",
+            "email": "quarterly.scenario@example.com",
+            "phone": "+91 9876543703",
+            "address": "Quarterly Test Address",
+            "emergency_contact": {
+                "name": "Quarterly Contact",
+                "phone": "+91 9876543704",
+                "relationship": "Friend"
+            },
+            "membership_type": "quarterly"
+        }
+        
+        success, response = self.make_request('POST', 'members', quarterly_data, auth_required=True)
+        
+        if success:
+            total_amount = response.get('total_amount_due', 0)
+            if total_amount == 3500.0:
+                self.log_test("Scenario 2 - Quarterly member (₹3500)", True,
+                            f"Quarterly member created with correct amount: ₹{total_amount}")
+                quarterly_member_id = response.get('id')
+                
+                # Verify payment record for quarterly member
+                self.verify_enrollment_payment_record(quarterly_member_id, 3500.0, "quarterly")
+            else:
+                self.log_test("Scenario 2 - Quarterly member (₹3500)", False,
+                            f"Expected ₹3500, got ₹{total_amount}")
+        else:
+            self.log_test("Scenario 2 - Quarterly member (₹3500)", False,
+                        "Failed to create quarterly member", response)
+        
+        # Scenario 3: Create six-monthly member (should be ₹6000)
+        six_monthly_data = {
+            "name": "Six Monthly Scenario Test",
+            "email": "sixmonthly.scenario@example.com",
+            "phone": "+91 9876543705",
+            "address": "Six Monthly Test Address",
+            "emergency_contact": {
+                "name": "Six Monthly Contact",
+                "phone": "+91 9876543706",
+                "relationship": "Friend"
+            },
+            "membership_type": "six_monthly"
+        }
+        
+        success, response = self.make_request('POST', 'members', six_monthly_data, auth_required=True)
+        
+        if success:
+            total_amount = response.get('total_amount_due', 0)
+            if total_amount == 6000.0:
+                self.log_test("Scenario 3 - Six-monthly member (₹6000)", True,
+                            f"Six-monthly member created with correct amount: ₹{total_amount}")
+                six_monthly_member_id = response.get('id')
+                
+                # Verify payment record for six-monthly member
+                self.verify_enrollment_payment_record(six_monthly_member_id, 6000.0, "six_monthly")
+            else:
+                self.log_test("Scenario 3 - Six-monthly member (₹6000)", False,
+                            f"Expected ₹6000, got ₹{total_amount}")
+        else:
+            self.log_test("Scenario 3 - Six-monthly member (₹6000)", False,
+                        "Failed to create six-monthly member", response)
+
+    def verify_enrollment_payment_record(self, member_id: str, expected_amount: float, membership_type: str):
+        """Verify that enrollment payment record is created for each enrollment"""
+        success, response = self.make_request('GET', f'payments/{member_id}', auth_required=True)
+        
+        if success and isinstance(response, list):
+            enrollment_payments = [p for p in response if 'enrollment' in p.get('description', '').lower()]
+            
+            if enrollment_payments:
+                payment = enrollment_payments[0]
+                payment_amount = payment.get('amount', 0)
+                payment_status = payment.get('status', 'unknown')
+                
+                if payment_amount == expected_amount:
+                    self.log_test(f"Payment Record - {membership_type} enrollment", True,
+                                f"Payment record created: ₹{payment_amount}, Status: {payment_status}")
+                else:
+                    self.log_test(f"Payment Record - {membership_type} enrollment", False,
+                                f"Expected ₹{expected_amount}, got ₹{payment_amount}")
+            else:
+                self.log_test(f"Payment Record - {membership_type} enrollment", False,
+                            "No enrollment payment record found")
+        else:
+            self.log_test(f"Payment Record - {membership_type} enrollment", False,
+                        "Failed to retrieve payment records")
+
+    def run_enrollment_amount_tests(self):
+        """Run all enrollment amount specific tests"""
+        print("="*80)
+        print("IRON PARADISE GYM - ENROLLMENT AMOUNT FUNCTIONALITY TESTING")
+        print("="*80)
+        
+        # Authentication first
+        self.test_authentication_login()
+        
+        if not self.auth_token:
+            print("❌ Cannot proceed with enrollment amount testing - authentication failed")
+            return
+        
+        # Run enrollment amount specific tests
+        self.test_enrollment_amount_calculation()
+        self.test_member_creation_with_enrollment_amount()
+        self.test_enrollment_amount_scenarios()
+        
+        # Print final results
+        self.print_enrollment_test_summary()
+
+    def print_enrollment_test_summary(self):
+        """Print summary of enrollment amount tests"""
+        print("\n" + "="*80)
+        print("ENROLLMENT AMOUNT TESTING SUMMARY")
+        print("="*80)
+        
+        passed_tests = [test for test in self.test_results if test['success']]
+        failed_tests = [test for test in self.test_results if not test['success']]
+        
+        print(f"Total Tests Run: {self.tests_run}")
+        print(f"Tests Passed: {self.tests_passed} ✅")
+        print(f"Tests Failed: {len(failed_tests)} ❌")
+        print(f"Success Rate: {(self.tests_passed/self.tests_run)*100:.1f}%")
+        
+        if failed_tests:
+            print("\n❌ FAILED TESTS:")
+            for test in failed_tests:
+                print(f"  - {test['test_name']}: {test['details']}")
+        
+        print("\n" + "="*80)
+        print("ENROLLMENT AMOUNT TESTING COMPLETED")
+        print("="*80)
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🏋️ Starting Iron Paradise Gym Management API Tests")
