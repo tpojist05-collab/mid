@@ -369,7 +369,7 @@ const MemberManagement = () => {
               </DialogHeader>
               <MemberForm 
                 formData={formData}
-                setFormData={setFormData}
+                setFormData={updateFormData}
                 handleSubmit={handleSubmit}
                 selectedMember={selectedMember}
                 isEditModalOpen={isEditModalOpen}
