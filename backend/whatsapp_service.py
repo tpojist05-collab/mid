@@ -50,6 +50,47 @@ class DirectWhatsAppService:
             logger.error(f"Error sending WhatsApp reminder: {e}")
             return {"success": False, "error": str(e)}
     
+    async def send_custom_reminder(self, member: Dict[str, Any], custom_message: str, days_before_expiry: int = 7) -> Dict[str, Any]:
+        """Send custom WhatsApp reminder to member"""
+        try:
+            if not self.enabled:
+                return {"success": False, "error": "WhatsApp service disabled"}
+            
+            # Get member phone number
+            member_phone = self.clean_phone_number(member.get('phone', ''))
+            if not member_phone:
+                return {"success": False, "error": "Invalid phone number"}
+            
+            # Use custom message provided by admin/manager
+            formatted_message = f"""🏋️ {self.business_name} - Personal Message
+
+Hi {member['name']},
+
+{custom_message}
+
+Best regards,
+{self.business_name} Team 💪
+
+Contact: {self.business_number}"""
+            
+            # Create WhatsApp link for direct sending
+            whatsapp_link = self.create_whatsapp_link(member_phone, formatted_message)
+            
+            # Log the reminder attempt
+            await self.log_reminder(member, formatted_message, whatsapp_link, days_before_expiry)
+            
+            return {
+                "success": True,
+                "message": f"Custom WhatsApp reminder created for {member['name']}",
+                "whatsapp_link": whatsapp_link,
+                "phone": member_phone,
+                "message_content": formatted_message
+            }
+            
+        except Exception as e:
+            logger.error(f"Error sending custom WhatsApp reminder: {e}")
+            return {"success": False, "error": str(e)}
+    
     def create_whatsapp_link(self, phone: str, message: str) -> str:
         """Create direct WhatsApp link"""
         # Ensure phone number is in international format
