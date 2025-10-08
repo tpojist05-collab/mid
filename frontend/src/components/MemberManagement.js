@@ -147,14 +147,17 @@ const MemberManagement = () => {
 
   const handleEdit = (member) => {
     setSelectedMember(member);
-    setFormData({
+    const editFormData = {
       name: member.name,
       email: member.email,
       phone: member.phone,
       address: member.address,
       emergency_contact: member.emergency_contact,
       membership_type: member.membership_type
-    });
+    };
+    // Calculate enrollment amount for existing member (renewal pricing)
+    editFormData.enrollment_amount = calculateEnrollmentAmount(member.membership_type, true);
+    setFormData(editFormData);
     setIsEditModalOpen(true);
   };
 
