@@ -3348,8 +3348,12 @@ class IronParadiseGymAPITester:
             
         # Test 1: Verify custom reminders work with business number
         if self.created_member_id:
+            reminder_data = {
+                "member_id": self.created_member_id,
+                "custom_message": "Integration test message with business number +917099197780"
+            }
             success, response = self.make_request('POST', f'reminders/send/{self.created_member_id}', 
-                                                auth_required=True)
+                                                reminder_data, auth_required=True)
             
             if success:
                 # Check response contains business number reference
