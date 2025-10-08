@@ -957,17 +957,26 @@ async def create_member(member_data: MemberCreate, current_user: User = Depends(
         # Set join date if not provided (can be backdate)
         join_date = member_data.join_date or datetime.now(timezone.utc)
         
-        # Calculate membership fee
-        membership_fee = await calculate_membership_fee(member_data.membership_type)
+        # Calculate enrollment amount based on new pricing structure
+        enrollment_amount = member_data.enrollment_amount
+        if enrollment_amount is None:
+            # Calculate default enrollment amount for new members
+            enrollment_amount = calculate_enrollment_amount(member_data.membership_type, is_existing_member=False)
+        
         membership_end = calculate_membership_end_date(join_date, member_data.membership_type)
         
-        # Apply admission fee ONLY for monthly memberships
+        # For backward compatibility, calculate separate admission fee and membership fee
+        # But the total enrollment amount takes precedence
         admission_fee = 0.0
-        if member_data.membership_type == MembershipType.MONTHLY:
-            admission_fee = await get_admission_fee()
+        membership_fee = enrollment_amount
         
-        # Calculate total amount due
-        total_due = admission_fee + membership_fee
+        # If monthly membership, separate admission fee from membership fee for tracking
+        if member_data.membership_type == MembershipType.MONTHLY:
+            default_admission_fee = await get_admission_fee()
+            admission_fee = default_admission_fee
+            membership_fee = enrollment_amount - admission_fee
+        
+        total_due = enrollment_amount
         
         member = Member(
             **member_data.dict(exclude={'join_date'}),
