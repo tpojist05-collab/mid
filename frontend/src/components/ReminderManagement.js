@@ -27,6 +27,9 @@ const ReminderManagement = () => {
     message: '',
     variables: []
   });
+  const [showCustomReminderDialog, setShowCustomReminderDialog] = useState(false);
+  const [selectedMemberForReminder, setSelectedMemberForReminder] = useState(null);
+  const [customReminderMessage, setCustomReminderMessage] = useState('');
 
   useEffect(() => {
     fetchExpiringMembers();
