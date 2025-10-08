@@ -122,17 +122,16 @@ const ReminderManagement = () => {
     }
 
     try {
-      const formData = new FormData();
-      formData.append('member_id', selectedMemberForReminder.id);
-      formData.append('custom_message', customReminderMessage.trim());
-      
       const response = await axios.post(
         `${process.env.REACT_APP_BACKEND_URL}/api/reminders/send/${selectedMemberForReminder.id}`,
-        formData,
+        {
+          member_id: selectedMemberForReminder.id,
+          custom_message: customReminderMessage.trim()
+        },
         { 
           headers: { 
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
+            'Content-Type': 'application/json'
           } 
         }
       );
