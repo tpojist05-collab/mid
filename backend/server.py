@@ -1982,7 +1982,7 @@ async def update_member_payment_status(member_id: str, amount: float):
         member_name = current_member.get('name', 'Unknown') if current_member else 'Unknown'
         await send_system_notification(
             f"PayU Payment Success: ₹{amount}",
-            f"PayU payment of ₹{amount} recorded for {member_name}. Membership extended by {membership_extension} days until {new_expiry_date.strftime('%Y-%m-%d')}",
+            f"PayU payment of ₹{amount} recorded for {member_name}. Membership extended by {extension_days} days until {new_expiry_date.strftime('%Y-%m-%d')}",
             "info"
         )
         
