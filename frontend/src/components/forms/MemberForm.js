@@ -128,10 +128,63 @@ const MemberForm = ({
             </SelectContent>
           </Select>
           <div className="text-xs text-slate-500 mt-1">
-            💰 Admin will set pricing in settings
+            Select membership duration
           </div>
         </div>
       </div>
+
+      {/* Enrollment Amount Section */}
+      {formData.membership_type && (
+        <div className="border rounded-lg p-4 bg-gradient-to-r from-green-50 to-emerald-50">
+          <h4 className="font-medium text-slate-800 mb-3 flex items-center">
+            💰 Enrollment Payment
+            {selectedMember && (
+              <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                Renewal
+              </span>
+            )}
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Amount to Pay</Label>
+              <div className="text-2xl font-bold text-green-600">
+                ₹{enrollmentAmount.toLocaleString()}
+              </div>
+              <div className="text-sm text-slate-600">
+                {getAmountDescription(formData.membership_type, !!selectedMember)}
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Pricing Breakdown</Label>
+              <div className="text-sm space-y-1">
+                <div className="flex justify-between">
+                  <span>Membership ({formData.membership_type}):</span>
+                  <span>₹{enrollmentAmount.toLocaleString()}</span>
+                </div>
+                {!selectedMember && (
+                  <div className="text-xs text-slate-500 border-t pt-1">
+                    * First-time enrollment includes setup and processing fees
+                  </div>
+                )}
+                {selectedMember && (
+                  <div className="text-xs text-slate-500 border-t pt-1">
+                    * Renewal pricing for existing member
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-3 p-3 bg-white/50 rounded-md">
+            <div className="text-sm text-slate-700">
+              <strong>Note:</strong> This amount will be collected at the time of enrollment. 
+              Payment can be made via cash, UPI, card, or online payment gateways.
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label htmlFor="address">Address</Label>
