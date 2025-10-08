@@ -603,6 +603,28 @@ def calculate_membership_end_date(start_date: datetime, membership_type: Members
     days = duration_days.get(membership_type, 30)
     return start_date + timedelta(days=days)
 
+def calculate_enrollment_amount(membership_type: MembershipType, is_existing_member: bool = False) -> float:
+    """Calculate enrollment amount based on membership type and enrollment status"""
+    amounts = {
+        MembershipType.MONTHLY: {
+            "first": 2500.0,  # First month
+            "subsequent": 1000.0  # Subsequent months
+        },
+        MembershipType.QUARTERLY: {
+            "first": 3500.0,  # First quarter
+            "subsequent": 3000.0  # Subsequent quarters
+        },
+        MembershipType.SIX_MONTHLY: {
+            "first": 6000.0,  # First half-year
+            "subsequent": 5500.0  # Subsequent half-years
+        }
+    }
+    
+    if membership_type not in amounts:
+        return 0.0
+    
+    return amounts[membership_type]["subsequent" if is_existing_member else "first"]
+
 def prepare_for_mongo(data: dict) -> dict:
     """Prepare data for MongoDB storage"""
     for key, value in data.items():
