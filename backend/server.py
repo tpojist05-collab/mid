@@ -2154,9 +2154,14 @@ async def get_payu_info():
         return {"available": False, "error": str(e)}
 
 # Enhanced Reminder Management
+class CustomReminderRequest(BaseModel):
+    member_id: str
+    custom_message: Optional[str] = None
+
 @api_router.post("/reminders/send/{member_id}")
 async def send_reminder_to_member(
     member_id: str,
+    reminder_data: Optional[CustomReminderRequest] = None,
     current_user: User = Depends(get_current_active_user)
 ):
     try:
@@ -2176,20 +2181,49 @@ async def send_reminder_to_member(
             expiry_date = expiry_date.replace(tzinfo=timezone.utc)
         days_until_expiry = max(0, (expiry_date - datetime.now(timezone.utc)).days)
         
+        # Check if custom message is provided
+        custom_message = None
+        if reminder_data and reminder_data.custom_message:
+            custom_message = reminder_data.custom_message.strip()
+        
         # Send WhatsApp reminder using new service
-        result = await whatsapp_service.send_reminder(member, days_until_expiry)
+        if custom_message:
+            result = await whatsapp_service.send_custom_reminder(member, custom_message, days_until_expiry)
+        else:
+            result = await whatsapp_service.send_reminder(member, days_until_expiry)
         
         if result["success"]:
+            # Store reminder record in register
+            reminder_record = {
+                "id": str(uuid.uuid4()),
+                "member_id": member_id,
+                "member_name": member['name'],
+                "member_phone": member.get('phone', ''),
+                "message_content": result.get("message_content", ""),
+                "whatsapp_link": result.get("whatsapp_link", ""),
+                "sent_by": current_user.id,
+                "sent_by_name": current_user.full_name,
+                "sent_at": datetime.now(timezone.utc),
+                "method": "custom_whatsapp" if custom_message else "whatsapp",
+                "status": "link_created",
+                "business_number": "+917099197780",
+                "is_custom": bool(custom_message)
+            }
+            
+            await db.reminder_logs.insert_one(reminder_record)
+            
             # Send notification about manual reminder
+            message_type = "Custom WhatsApp reminder" if custom_message else "WhatsApp reminder"
             await send_system_notification(
-                "Manual reminder sent",
-                f"WhatsApp reminder link created for {member['name']} by {current_user.full_name}",
+                f"{message_type} sent",
+                f"{message_type} link created for {member['name']} by {current_user.full_name}",
                 "info"
             )
             return {
                 "message": result["message"],
                 "whatsapp_link": result["whatsapp_link"],
-                "phone": result["phone"]
+                "phone": result["phone"],
+                "reminder_logged": True
             }
         else:
             raise HTTPException(status_code=400, detail=result["error"])
