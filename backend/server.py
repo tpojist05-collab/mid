@@ -105,6 +105,7 @@ class MemberCreate(BaseModel):
     emergency_contact: EmergencyContact
     membership_type: MembershipType
     join_date: Optional[datetime] = None
+    enrollment_amount: Optional[float] = None
 
 class Member(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
