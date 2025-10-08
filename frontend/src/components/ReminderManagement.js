@@ -274,7 +274,7 @@ const ReminderManagement = () => {
           )}
         </TabsList>
 
-        <TabsContent value="expiring" className="space-y-4">
+        <TabsContent value="members" className="space-y-4">
           {expiringMembers.length === 0 ? (
             <Card>
               <CardContent className="flex items-center justify-center h-32">
