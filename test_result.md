@@ -315,6 +315,42 @@
           agent: "testing"
           comment: "ENROLLMENT AMOUNT FRONTEND UI TESTING COMPLETED SUCCESSFULLY: Comprehensive frontend testing of enrollment amount functionality as requested in review. ✅ ENROLLMENT AMOUNT DISPLAY: Enrollment Payment section displays correctly with proper styling and layout in Add Member form. ✅ FIRST-TIME PRICING: Monthly ₹2,500 (First month fee includes setup), Quarterly ₹3,500 (First quarter fee includes setup), Six-monthly ₹6,000 (First half-year fee includes setup) all displayed correctly. ✅ RENEWAL PRICING: Monthly ₹1,000 (Subsequent month fee), Quarterly ₹3,000 (Renewal quarter fee), Six-monthly ₹5,500 (Renewal half-year fee) all displayed correctly for existing members. ✅ REAL-TIME UPDATES: Enrollment amount updates immediately when switching between membership types. ✅ PRICING BREAKDOWN: Shows membership type, amount, and description with proper formatting. ✅ RENEWAL INDICATOR: 'Renewal' badge displayed for existing member edits. ✅ PAYMENT NOTES: Clear notes about payment methods (cash, UPI, card, online gateways). ✅ RESPONSIVE DESIGN: Enrollment amount section works correctly on both desktop and mobile viewports. All enrollment amount functionality working perfectly as specified in review request."
 
+  - task: "Renewal Date Logic Correction System"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "RENEWAL DATE LOGIC CORRECTION TESTING COMPLETED SUCCESSFULLY: Comprehensive testing of the corrected renewal date logic as requested in review. ✅ PAYMENT AMOUNT EXTENSIONS: All 3 specific payment amounts working perfectly - ₹1000 payment → 30 days extension, ₹3000 payment → 90 days extension, ₹5500 payment → 180 days extension. ✅ CRITICAL CORRECTION VERIFIED: All membership extensions calculated from previous expiry date (not current date) as specifically requested in review. ✅ PAYMENT PROCESSING: All payment methods (manual, cash) tested and working correctly with proper member status updates. ✅ DATE CALCULATION ACCURACY: Extension days calculated with 1-day tolerance accuracy, proper timezone handling, membership end dates updated correctly. CONCLUSION: The renewal date logic correction is working perfectly as specified in the review request - payments now extend membership from the previous expiry date rather than current date."
+
+  - task: "Custom Reminder System with Business Number"
+    implemented: true
+    working: true
+    file: "server.py, whatsapp_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "CUSTOM REMINDER SYSTEM TESTING COMPLETED SUCCESSFULLY: Comprehensive testing of custom reminder functionality with WhatsApp business number +917099197780 as requested in review. ✅ CUSTOM REMINDER ENDPOINT: POST /api/reminders/send/{member_id} working perfectly with custom message functionality, accepts CustomReminderRequest with member_id and custom_message fields. ✅ WHATSAPP BUSINESS NUMBER INTEGRATION: Business number +917099197780 properly integrated in all reminder messages, WhatsApp links generated correctly with business contact information. ✅ REMINDER REGISTER/LOGS: GET /api/reminders/register working with proper custom message flags, reminder logging includes sender information and custom message indicators. ✅ CUSTOM MESSAGE FORMATTING: Custom messages formatted with Iron Paradise Gym branding, business contact details included in all messages. CONCLUSION: Custom reminder system with business number +917099197780 is fully operational and ready for production use as requested in review."
+
+  - task: "WhatsApp Custom Message Service Integration"
+    implemented: true
+    working: true
+    file: "whatsapp_service.py, server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "WHATSAPP CUSTOM MESSAGE SERVICE TESTING COMPLETED SUCCESSFULLY: Comprehensive testing of WhatsApp custom message service with business branding as requested in review. ✅ WHATSAPP LINK GENERATION: WhatsApp links generated correctly with wa.me format, business number +917099197780 integrated in message content and contact information. ✅ BUSINESS BRANDING: All custom messages include Iron Paradise Gym branding, professional message formatting with business contact details. ✅ TEMPLATE SYSTEM: GET /api/settings/reminder-template working with Iron Paradise Gym branding, template variables supported for customization. ✅ CUSTOM MESSAGE FORMATTING: Custom messages properly formatted with member data, business information, and professional presentation. CONCLUSION: WhatsApp custom message service is fully operational with proper business branding and ready for production use as requested in review."
+
 ## frontend:
   - task: "Form Input Focus Fix"
     implemented: true
