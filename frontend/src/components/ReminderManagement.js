@@ -499,6 +499,53 @@ const ReminderManagement = () => {
           </TabsContent>
         )}
       </Tabs>
+
+      {/* Custom Reminder Dialog */}
+      <Dialog open={showCustomReminderDialog} onOpenChange={setShowCustomReminderDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send Custom Reminder</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedMemberForReminder && (
+              <div className="p-3 bg-gray-50 border rounded-lg">
+                <p className="font-medium">{selectedMemberForReminder.name}</p>
+                <p className="text-sm text-gray-600">{selectedMemberForReminder.phone}</p>
+              </div>
+            )}
+            
+            <div>
+              <Label htmlFor="custom-message">Custom Message</Label>
+              <textarea
+                id="custom-message"
+                value={customReminderMessage}
+                onChange={(e) => setCustomReminderMessage(e.target.value)}
+                className="w-full mt-1 p-3 border border-gray-300 rounded-md resize-none"
+                rows={4}
+                placeholder="Enter your custom reminder message..."
+              />
+            </div>
+            
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowCustomReminderDialog(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={sendCustomReminder}
+                disabled={!customReminderMessage.trim()}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
+                <Send className="w-4 h-4 mr-2" />
+                Send WhatsApp
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
