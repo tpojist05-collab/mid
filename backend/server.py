@@ -1499,32 +1499,39 @@ async def record_payment(payment_data: PaymentCreate):
         # Update monthly earnings
         await update_monthly_earnings(payment_dict)
         
-        # Calculate membership extension based on payment amount
-        membership_extension = await calculate_membership_extension(payment.amount)
-        
         # Get current member data
         current_member = await db.members.find_one({"id": payment_data.member_id})
-        current_end_date = datetime.now(timezone.utc)
         
-        # Determine membership start and end dates for renewal
-        membership_start_date = datetime.now(timezone.utc)
+        # Calculate membership extension based on specific payment amounts
+        extension_days = 0
+        if payment.amount == 1000:
+            extension_days = 30  # Monthly renewal
+        elif payment.amount == 3000:
+            extension_days = 90  # Quarterly renewal
+        elif payment.amount == 5500:
+            extension_days = 180  # Six-monthly renewal
+        else:
+            # For other amounts, use the existing calculation method
+            extension_days = await calculate_membership_extension(payment.amount)
         
-        # Use existing end date if membership is still active, otherwise start from today
+        # Determine renewal date and new expiry date
         if current_member and current_member.get('membership_end'):
             try:
                 existing_end_date = datetime.fromisoformat(current_member['membership_end'])
-                if existing_end_date > datetime.now(timezone.utc):
-                    # Membership is still active - extend from existing end date
-                    current_end_date = existing_end_date
-                    membership_start_date = existing_end_date  # New membership period starts from expiry
-                else:
-                    # Membership expired - start from today
-                    current_end_date = datetime.now(timezone.utc)
+                # Always use the previous expiry date as the renewal start date
+                membership_start_date = existing_end_date
+                current_end_date = existing_end_date
             except (ValueError, TypeError):
-                pass
+                # Fallback if date parsing fails
+                membership_start_date = datetime.now(timezone.utc)
+                current_end_date = datetime.now(timezone.utc)
+        else:
+            # New member case
+            membership_start_date = datetime.now(timezone.utc)
+            current_end_date = datetime.now(timezone.utc)
         
         # Calculate new expiry date
-        new_expiry_date = current_end_date + timedelta(days=membership_extension)
+        new_expiry_date = current_end_date + timedelta(days=extension_days)
         
         # Update member status, expiry, and membership start date
         await db.members.update_one(
