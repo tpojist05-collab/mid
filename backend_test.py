@@ -3025,7 +3025,17 @@ class IronParadiseGymAPITester:
         self.test_whatsapp_reminder_system_quick_check()
         
         # Print summary
-        self.print_final_summary()
+        print("="*80)
+        print(f"📊 WhatsApp Quick Test Summary: {self.tests_passed}/{self.tests_run} tests passed")
+        
+        if self.tests_passed == self.tests_run:
+            print("🎉 All WhatsApp reminder system tests passed!")
+        else:
+            failed_tests = [test for test in self.test_results if not test['success']]
+            print(f"❌ {len(failed_tests)} test(s) failed:")
+            for test in failed_tests:
+                print(f"  - {test['test_name']}: {test['details']}")
+        print("="*80)
 
     def run_all_tests(self):
         """Run all API tests"""
