@@ -16,6 +16,44 @@ const MemberForm = ({
   setIsAddModalOpen,
   resetForm
 }) => {
+  
+  // Calculate enrollment amount based on membership type and enrollment status
+  const calculateEnrollmentAmount = (membershipType, isExistingMember = false) => {
+    const amounts = {
+      monthly: {
+        first: 2500,  // First month
+        subsequent: 1000  // Subsequent months
+      },
+      quarterly: {
+        first: 3500,  // First quarter
+        subsequent: 3000  // Subsequent quarters
+      },
+      six_monthly: {
+        first: 6000,  // First half-year
+        subsequent: 5500  // Subsequent half-years
+      }
+    };
+    
+    if (!membershipType || !amounts[membershipType]) {
+      return 0;
+    }
+    
+    return isExistingMember ? amounts[membershipType].subsequent : amounts[membershipType].first;
+  };
+  
+  // Get current enrollment amount
+  const enrollmentAmount = calculateEnrollmentAmount(formData.membership_type, !!selectedMember);
+  
+  // Get amount description
+  const getAmountDescription = (membershipType, isExistingMember = false) => {
+    const descriptions = {
+      monthly: isExistingMember ? 'Subsequent month fee' : 'First month fee (includes setup)',
+      quarterly: isExistingMember ? 'Renewal quarter fee' : 'First quarter fee (includes setup)',
+      six_monthly: isExistingMember ? 'Renewal half-year fee' : 'First half-year fee (includes setup)'
+    };
+    
+    return descriptions[membershipType] || 'Enrollment fee';
+  };
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
