@@ -343,7 +343,7 @@ const ReminderManagement = () => {
                           )}
                           
                           <Button
-                            onClick={() => sendIndividualReminder(member.id, member.name)}
+                            onClick={() => sendIndividualReminder(member)}
                             variant={member.reminder_sent_today ? 'outline' : 'default'}
                             size="sm"
                             className={member.reminder_sent_today ? '' : 'bg-green-600 hover:bg-green-700'}
