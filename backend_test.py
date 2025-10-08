@@ -3375,7 +3375,8 @@ class IronParadiseGymAPITester:
             self.log_test("Business Number Integration", False, "No member ID available for testing")
             
         # Test 2: Test reminder logging includes sender information
-        success, response = self.make_request('GET', 'reminders/history', auth_required=True)
+        # Use the reminder register endpoint instead since general history doesn't exist
+        success, response = self.make_request('GET', 'reminders/register', auth_required=True)
         
         if success:
             if isinstance(response, list) and len(response) > 0:
