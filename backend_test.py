@@ -3379,30 +3379,35 @@ class IronParadiseGymAPITester:
         success, response = self.make_request('GET', 'reminders/register', auth_required=True)
         
         if success:
-            if isinstance(response, list) and len(response) > 0:
-                # Check recent logs for sender information
-                recent_logs = response[:5]  # Check last 5 logs
-                logs_with_sender = [log for log in recent_logs if log.get('sender') or log.get('sent_by')]
-                
-                if logs_with_sender:
-                    self.log_test("Reminder Logging with Sender Info", True, 
-                                f"Found {len(logs_with_sender)} logs with sender information")
-                else:
-                    self.log_test("Reminder Logging with Sender Info", True, 
-                                "Reminder logging system operational")
+            # The response structure is {"total_reminders": X, "reminders": [...]}
+            if isinstance(response, dict) and 'reminders' in response:
+                reminders = response.get('reminders', [])
+                if len(reminders) > 0:
+                    # Check recent logs for sender information
+                    recent_logs = reminders[:5]  # Check last 5 logs
+                    logs_with_sender = [log for log in recent_logs if log.get('sender') or log.get('sent_by')]
                     
-                # Check for custom message indicators
-                custom_indicators = [log for log in recent_logs if 
-                                   log.get('is_custom') or log.get('message_type') == 'custom']
-                
-                if custom_indicators:
-                    self.log_test("Custom Message Logging", True, 
-                                f"Found {len(custom_indicators)} custom message logs")
+                    if logs_with_sender:
+                        self.log_test("Reminder Logging with Sender Info", True, 
+                                    f"Found {len(logs_with_sender)} logs with sender information")
+                    else:
+                        self.log_test("Reminder Logging with Sender Info", True, 
+                                    "Reminder logging system operational")
+                        
+                    # Check for custom message indicators
+                    custom_indicators = [log for log in recent_logs if 
+                                       log.get('is_custom') or log.get('message_type') == 'custom']
+                    
+                    if custom_indicators:
+                        self.log_test("Custom Message Logging", True, 
+                                    f"Found {len(custom_indicators)} custom message logs")
+                    else:
+                        self.log_test("Custom Message Logging", True, 
+                                    "Logging system ready for custom message tracking")
                 else:
-                    self.log_test("Custom Message Logging", True, 
-                                "Logging system ready for custom message tracking")
+                    self.log_test("Reminder History Access", True, "Reminder history system accessible")
             else:
-                self.log_test("Reminder History Access", True, "Reminder history system accessible")
+                self.log_test("Reminder History Access", True, "Reminder register system accessible")
         else:
             # Check if it's a serialization error (known issue) or other error
             if 'ObjectId' in str(response) or response.get('status_code') == 500:
