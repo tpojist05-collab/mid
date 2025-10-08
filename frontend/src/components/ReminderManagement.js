@@ -382,6 +382,96 @@ const ReminderManagement = () => {
             </div>
           )}
         </TabsContent>
+
+        {(user?.role === 'admin' || user?.role === 'manager') && (
+          <TabsContent value="templates" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" />
+                  WhatsApp Message Template
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {reminderTemplate ? (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-gray-50 border rounded-lg">
+                      <Label className="text-sm font-medium text-gray-700">Current Template:</Label>
+                      <p className="mt-2 text-sm text-gray-900 whitespace-pre-wrap">
+                        {reminderTemplate.message}
+                      </p>
+                      <p className="mt-2 text-xs text-gray-500">
+                        Last updated: {formatDate(reminderTemplate.updated_at)}
+                      </p>
+                    </div>
+                    
+                    <Button 
+                      onClick={() => setShowTemplateEditor(true)}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      Edit Template
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500 mb-4">No template configured</p>
+                    <Button 
+                      onClick={() => setShowTemplateEditor(true)}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      Create Template
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Template Editor Dialog */}
+            <Dialog open={showTemplateEditor} onOpenChange={setShowTemplateEditor}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Edit WhatsApp Message Template</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="template-message">Message Template</Label>
+                    <textarea
+                      id="template-message"
+                      value={templateForm.message}
+                      onChange={(e) => setTemplateForm({...templateForm, message: e.target.value})}
+                      className="w-full mt-1 p-3 border border-gray-300 rounded-md resize-none"
+                      rows={8}
+                      placeholder="Enter your WhatsApp message template here..."
+                    />
+                  </div>
+                  
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 className="font-medium text-blue-900 mb-2">Available Variables:</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm text-blue-800">
+                      <div>• {'{member_name}'} - Member's name</div>
+                      <div>• {'{expiry_date}'} - Membership expiry date</div>
+                      <div>• {'{days_left}'} - Days until expiry</div>
+                      <div>• {'{membership_type}'} - Type of membership</div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <Button variant="outline" onClick={() => setShowTemplateEditor(false)}>
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={updateReminderTemplate}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      Save Template
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
