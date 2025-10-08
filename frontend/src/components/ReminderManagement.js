@@ -21,6 +21,12 @@ const ReminderManagement = () => {
   const [selectedDays, setSelectedDays] = useState(7);
   const [bulkSending, setBulkSending] = useState(false);
   const [showBulkDialog, setShowBulkDialog] = useState(false);
+  const [reminderTemplate, setReminderTemplate] = useState(null);
+  const [showTemplateEditor, setShowTemplateEditor] = useState(false);
+  const [templateForm, setTemplateForm] = useState({
+    message: '',
+    variables: []
+  });
 
   useEffect(() => {
     fetchExpiringMembers();
