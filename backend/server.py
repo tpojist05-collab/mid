@@ -2331,12 +2331,8 @@ async def get_member_reminder_history(
     current_user: User = Depends(get_current_active_user)
 ):
     try:
-        # Use new WhatsApp service for reminder history
-        whatsapp_service = get_whatsapp_service()
-        if not whatsapp_service:
-            raise HTTPException(status_code=503, detail="WhatsApp service not available")
-        
-        history = await whatsapp_service.get_reminder_history(member_id)
+        # Get reminder history for specific member
+        history = await db.reminder_logs.find({"member_id": member_id}).sort("sent_at", -1).to_list(100)
         
         # Clean history data for serialization
         cleaned_history = []
@@ -2349,7 +2345,10 @@ async def get_member_reminder_history(
         
         return cleaned_history
         
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Error getting reminder history: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/reminders/expiring-members")
