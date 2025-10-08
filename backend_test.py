@@ -3455,7 +3455,18 @@ class IronParadiseGymAPITester:
         self.test_integration_testing_custom_reminders()
         
         # Print final results
-        self.print_test_summary()
+        print("="*80)
+        print(f"📊 Priority Test Summary: {self.tests_passed}/{self.tests_run} tests passed")
+        
+        if self.tests_passed == self.tests_run:
+            print("🎉 All priority tests passed! Renewal date logic and custom reminders working correctly.")
+        else:
+            print("❌ Some priority tests failed!")
+            failed_tests = [test for test in self.test_results if not test['success']]
+            print(f"\n❌ Failed tests ({len(failed_tests)}):")
+            for test in failed_tests:
+                print(f"  - {test['test_name']}: {test['details']}")
+        print("="*80)
 
     def run_all_tests(self):
         """Run all API tests"""
