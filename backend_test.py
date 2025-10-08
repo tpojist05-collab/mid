@@ -3291,6 +3291,9 @@ def main():
         elif sys.argv[1] == "enrollment":
             tester.run_enrollment_amount_tests()
             return 0 if tester.tests_passed == tester.tests_run else 1
+        elif sys.argv[1] == "whatsapp-quick":
+            tester.run_whatsapp_quick_test()
+            return 0 if tester.tests_passed == tester.tests_run else 1
     else:
         return tester.run_all_tests()
 
