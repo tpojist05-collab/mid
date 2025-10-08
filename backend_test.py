@@ -3716,7 +3716,10 @@ def main():
     
     # Check if we should run specific test suites
     if len(sys.argv) > 1:
-        if sys.argv[1] == "reminders":
+        if sys.argv[1] == "priority":
+            tester.run_priority_testing()
+            return 0 if tester.tests_passed == tester.tests_run else 1
+        elif sys.argv[1] == "reminders":
             return 0 if tester.run_reminder_system_tests() else 1
         elif sys.argv[1] == "enrollment":
             tester.run_enrollment_amount_tests()
@@ -3725,7 +3728,9 @@ def main():
             tester.run_whatsapp_quick_test()
             return 0 if tester.tests_passed == tester.tests_run else 1
     else:
-        return tester.run_all_tests()
+        # Run priority testing by default for this review request
+        tester.run_priority_testing()
+        return 0 if tester.tests_passed == tester.tests_run else 1
 
 if __name__ == "__main__":
     sys.exit(main())
