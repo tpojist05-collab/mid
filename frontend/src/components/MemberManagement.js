@@ -112,7 +112,7 @@ const MemberManagement = () => {
   };
 
   const resetForm = () => {
-    setFormData({
+    const initialFormData = {
       name: '',
       email: '',
       phone: '',
@@ -122,9 +122,22 @@ const MemberManagement = () => {
         phone: '',
         relationship: ''
       },
-      membership_type: 'monthly'
-    });
+      membership_type: 'monthly',
+      enrollment_amount: 0
+    };
+    initialFormData.enrollment_amount = calculateEnrollmentAmount('monthly', false);
+    setFormData(initialFormData);
     setSelectedMember(null);
+  };
+
+  // Custom form data setter that updates enrollment amount when membership type changes
+  const updateFormData = (newData) => {
+    if (newData.membership_type !== formData.membership_type) {
+      // Update enrollment amount when membership type changes
+      const isExisting = !!selectedMember;
+      newData.enrollment_amount = calculateEnrollmentAmount(newData.membership_type, isExisting);
+    }
+    setFormData(newData);
   };
 
   const handleEdit = (member) => {
