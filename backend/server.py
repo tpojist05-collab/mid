@@ -1506,24 +1506,33 @@ async def record_payment(payment_data: PaymentCreate):
         current_member = await db.members.find_one({"id": payment_data.member_id})
         current_end_date = datetime.now(timezone.utc)
         
+        # Determine membership start and end dates for renewal
+        membership_start_date = datetime.now(timezone.utc)
+        
         # Use existing end date if membership is still active, otherwise start from today
         if current_member and current_member.get('membership_end'):
             try:
                 existing_end_date = datetime.fromisoformat(current_member['membership_end'])
                 if existing_end_date > datetime.now(timezone.utc):
+                    # Membership is still active - extend from existing end date
                     current_end_date = existing_end_date
+                    membership_start_date = existing_end_date  # New membership period starts from expiry
+                else:
+                    # Membership expired - start from today
+                    current_end_date = datetime.now(timezone.utc)
             except (ValueError, TypeError):
                 pass
         
         # Calculate new expiry date
         new_expiry_date = current_end_date + timedelta(days=membership_extension)
         
-        # Update member status and expiry
+        # Update member status, expiry, and membership start date
         await db.members.update_one(
             {"id": payment_data.member_id},
             {"$set": {
                 "current_payment_status": "paid",
                 "member_status": "active",
+                "membership_start": membership_start_date.isoformat(),
                 "membership_end": new_expiry_date.isoformat(),
                 "updated_at": datetime.now(timezone.utc).isoformat()
             }}
