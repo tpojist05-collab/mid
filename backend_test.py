@@ -2863,6 +2863,12 @@ class IronParadiseGymAPITester:
         self.test_custom_join_dates_backdating()
         self.test_date_validation_for_backdating()
         
+        print("\n💰 ENROLLMENT AMOUNT FUNCTIONALITY TESTS")
+        print("-" * 40)
+        self.test_enrollment_amount_calculation()
+        self.test_member_creation_with_enrollment_amount()
+        self.test_enrollment_amount_scenarios()
+        
         print("\n💰 PAYMENT MANAGEMENT TESTS")
         print("-" * 40)
         self.test_razorpay_integration()
