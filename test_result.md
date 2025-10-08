@@ -475,18 +475,17 @@
 
 ## test_plan:
   current_focus:
-    - "WhatsApp Migration to Direct Service - COMPLETED ✅"
-    - "Additional Indian Payment Gateways Implementation - PayU COMPLETED ✅"
-    - "PayU Integration with Frontend - COMPLETED ✅"
-    - "Ready for additional gateways (GPay, Paytm, PhonePe) if needed"
-    - "Payment Gateway Expansion Phase Complete"
-    - "WhatsApp Migration Testing - COMPLETED ✅"
+    - "Enrollment Amount Functionality Testing - COMPLETED ✅"
+    - "Reminder Template Customization Testing - COMPLETED ✅"
+    - "WhatsApp Reminder System UI Testing - COMPLETED ✅"
+    - "Member Renewal vs New Member Pricing Testing - COMPLETED ✅"
+    - "All Priority Testing from Review Request - COMPLETED ✅"
   stuck_tasks: 
     - "Receipt Register Endpoint (GET /api/receipts/register returns 404 - Not Found) - NEEDS IMPLEMENTATION"
     - "Receipt Templates Endpoint (MongoDB ObjectId Serialization - /api/receipts/templates returns 500) - NON-CRITICAL"
     - "Reminder History Field Validation (Missing sender, timestamp, message fields) - NON-CRITICAL"
-  test_all: true
-  test_priority: "whatsapp_migration_testing_completed"
+  test_all: false
+  test_priority: "enrollment_amount_and_reminders_testing_completed"
 
 ## agent_communication:
     - agent: "main"
