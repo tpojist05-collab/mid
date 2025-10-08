@@ -68,6 +68,44 @@ const ReminderManagement = () => {
     }
   };
 
+  const fetchReminderTemplate = async () => {
+    try {
+      const response = await axios.get(
+        `${process.env.REACT_APP_BACKEND_URL}/api/settings/reminder-template`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setReminderTemplate(response.data);
+      setTemplateForm({
+        message: response.data.message || '',
+        variables: response.data.variables || []
+      });
+    } catch (error) {
+      console.error('Error fetching reminder template:', error);
+    }
+  };
+
+  const updateReminderTemplate = async () => {
+    try {
+      await axios.put(
+        `${process.env.REACT_APP_BACKEND_URL}/api/settings/reminder-template`,
+        {
+          message: templateForm.message,
+          variables: templateForm.variables,
+          updated_at: new Date().toISOString()
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast.success('Reminder template updated successfully');
+      setShowTemplateEditor(false);
+      fetchReminderTemplate();
+    } catch (error) {
+      console.error('Error updating reminder template:', error);
+      toast.error('Failed to update reminder template');
+    }
+  };
+
   const sendIndividualReminder = async (memberId, memberName) => {
     try {
       const response = await axios.post(
