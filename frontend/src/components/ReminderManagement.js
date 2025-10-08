@@ -256,16 +256,22 @@ const ReminderManagement = () => {
         </div>
       )}
 
-      <Tabs defaultValue="expiring" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="expiring" className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" />
+      <Tabs defaultValue="members" className="space-y-6">
+        <TabsList className={`grid w-full ${(user?.role === 'admin' || user?.role === 'manager') ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <TabsTrigger value="members" className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
             Expiring Members ({expiringMembers.length})
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center gap-2">
             <Clock className="w-4 h-4" />
             Reminder History
           </TabsTrigger>
+          {(user?.role === 'admin' || user?.role === 'manager') && (
+            <TabsTrigger value="templates" className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" />
+              Message Templates
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="expiring" className="space-y-4">
