@@ -3021,6 +3021,9 @@ class IronParadiseGymAPITester:
         self.test_root_endpoint()
         self.test_authentication_login()
         
+        # Create a test member for individual reminder testing
+        self.test_create_member()
+        
         # Main WhatsApp functionality test
         self.test_whatsapp_reminder_system_quick_check()
         
